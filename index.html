@@ -2,8 +2,8 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Diginex MockLab - BETA VERSION</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Universal Product Mockup Studio - Ultimate Edition</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
@@ -12,24 +12,41 @@
         body { 
             margin: 0; 
             overflow: hidden; 
-            background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%); /* Soft Blue Gradient */
+            background: #f0f9ff; 
             font-family: 'Inter', sans-serif; 
-            touch-action: none; /* Prevent scroll on mobile while dragging 3D */
+            touch-action: none; 
+            transition: background 0.5s ease;
         }
         #canvas-container { width: 100vw; height: 100vh; outline: none; }
         
-        /* LIQUID GLASS STYLE */
+        /* DESKTOP GLASS PANEL */
         .liquid-glass {
-            background: rgba(255, 255, 255, 0.65);
+            background: rgba(255, 255, 255, 0.75);
             backdrop-filter: blur(20px) saturate(180%);
             -webkit-backdrop-filter: blur(20px) saturate(180%);
             border: 1px solid rgba(255, 255, 255, 0.8);
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
             border-radius: 24px;
         }
+
+        /* MOBILE BOTTOM SHEET */
+        .mobile-sheet {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-top: 1px solid rgba(255,255,255,0.5);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+            border-radius: 24px 24px 0 0;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 40;
+        }
+        .mobile-sheet.active {
+            transform: translateY(0);
+        }
         
+        /* COMPONENTS */
         .product-btn {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
         }
         
@@ -37,24 +54,19 @@
             background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
             color: white;
             border-color: transparent;
-            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4), 0 0 0 2px rgba(147, 197, 253, 0.5); /* Outer Glow Ring */
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
             transform: translateY(-2px);
-            z-index: 10;
         }
-        
-        .product-btn.active::after {
-            content: '';
-            position: absolute;
-            inset: -3px;
-            border-radius: 18px; /* Match button radius + padding */
-            border: 2px solid #3b82f6;
-            opacity: 0.6;
-            pointer-events: none;
+
+        .side-btn.active {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
         }
 
         /* Custom Scrollbar */
-        .custom-scroll::-webkit-scrollbar { width: 5px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #bfdbfe; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
 
         input[type=range] {
@@ -62,311 +74,326 @@
             width: 100%;
             height: 6px;
             border-radius: 5px;
-            background: #dbeafe;
+            background: #e2e8f0;
             outline: none;
         }
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
             background: #3b82f6;
             cursor: pointer;
             border: 2px solid white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            transition: transform 0.1s;
-        }
-        input[type=range]::-webkit-slider-thumb:hover {
-            transform: scale(1.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
         }
 
-        /* Sidebar Transition (Only opacity/scale, movement handled by JS) */
-        #sidebar {
-            transition: opacity 0.3s, transform 0.1s; /* Faster transform for drag */
-            z-index: 50; 
-            max-height: 90vh; /* Limit height */
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .sidebar-hidden {
-            display: none !important;
-        }
+        /* Nav Icon Active State */
+        .nav-btn.active i { color: #3b82f6; transform: scale(1.1); }
+        .nav-btn.active span { color: #3b82f6; font-weight: 700; }
 
-        /* Toggle Switch */
-        .toggle-checkbox:checked {
-            right: 0;
-            border-color: #3b82f6;
-        }
-        .toggle-checkbox:checked + .toggle-label {
-            background-color: #3b82f6;
-        }
-
-        /* Draggable Header Cursor */
-        .drag-handle {
-            cursor: move; /* Fallback */
-            cursor: grab;
-        }
-        .drag-handle:active {
-            cursor: grabbing;
-        }
+        .drag-handle { cursor: grab; }
+        .drag-handle:active { cursor: grabbing; }
     </style>
 </head>
 <body class="text-slate-700">
 
     <!-- 3D PREVIEW LABEL -->
-    <div class="absolute top-6 right-6 z-30 pointer-events-none select-none">
+    <div class="absolute top-6 right-6 z-30 pointer-events-none select-none hidden md:block">
         <div class="bg-white/40 backdrop-blur-md border border-white/60 px-4 py-1.5 rounded-full flex items-center gap-2 shadow-sm">
             <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             <span class="text-[10px] font-bold text-slate-600 tracking-wider">3D PREVIEW</span>
         </div>
     </div>
 
-    <!-- Floating Open Button (Menu Hamburger) -->
-    <button id="open-btn" onclick="toggleSidebarVis()" class="absolute top-4 left-4 w-12 h-12 liquid-glass flex items-center justify-center text-blue-600 hover:scale-105 hover:bg-white transition-all z-40 shadow-lg sidebar-hidden">
-        <i class="fas fa-bars text-xl"></i>
-    </button>
-
-    <!-- Draggable Sidebar Panel -->
-    <div class="absolute top-4 left-4 w-80 max-w-[95vw] liquid-glass shadow-2xl flex flex-col" id="sidebar">
-        
-        <!-- Header (Drag Handle) -->
+    <!-- ================= DESKTOP UI (Sidebar) ================= -->
+    <div class="hidden md:flex absolute top-4 left-4 w-80 max-w-[95vw] liquid-glass shadow-2xl flex-col z-50 max-h-[90vh]" id="sidebar">
+        <!-- Sidebar Header -->
         <div id="sidebar-header" class="drag-handle p-5 border-b border-white/50 flex justify-between items-start select-none bg-white/10 rounded-t-[24px]">
             <div>
                 <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-500">
-                    Diginex MockLab
+                    Mockup Studio
                 </h1>
-                <p class="text-[10px] text-slate-500 font-medium tracking-wide">BETA VERSION</p>
+                <p class="text-[10px] text-slate-500 font-medium tracking-wide">Desktop Edition •</p>
             </div>
-            
-            <div class="flex items-center gap-1 -mr-2 -mt-2">
-                <!-- Minimize Button -->
-                <button onclick="toggleMinimize()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-blue-50 text-slate-400 hover:text-blue-500 transition-colors" title="Minimize">
-                    <i class="fas fa-minus text-xs" id="min-icon"></i>
-                </button>
-                <!-- Close Button -->
-                <button onclick="toggleSidebarVis()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors" title="Close">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
+            <button onclick="document.getElementById('sidebar-content').classList.toggle('hidden')" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-blue-50 text-slate-400 hover:text-blue-500 transition-colors">
+                <i class="fas fa-minus text-xs"></i>
+            </button>
         </div>
 
-        <!-- Collapsible Content Wrapper -->
-        <div id="sidebar-content" class="flex flex-col overflow-hidden transition-all duration-300" style="max-height: 80vh;">
-            
-            <!-- Scrollable Content -->
-            <div class="flex-1 overflow-y-auto custom-scroll p-6 space-y-8">
-                
-                <!-- 1. Product Selector -->
-                <div>
-                    <label class="block text-xs font-bold text-blue-400 uppercase tracking-widest mb-4">Pilih Produk</label>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button onclick="switchProduct('book')" class="product-btn active flex flex-col items-center justify-center p-2.5 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600">
-                            <i class="fas fa-book text-lg mb-1"></i>
-                            <span class="text-[9px] font-semibold">Buku</span>
-                        </button>
-                        <button onclick="switchProduct('mug')" class="product-btn flex flex-col items-center justify-center p-2.5 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600">
-                            <i class="fas fa-mug-hot text-lg mb-1"></i>
-                            <span class="text-[9px] font-semibold">Gelas</span>
-                        </button>
-                        <button onclick="switchProduct('totebag')" class="product-btn flex flex-col items-center justify-center p-2.5 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600">
-                            <i class="fas fa-shopping-bag text-lg mb-1"></i>
-                            <span class="text-[9px] font-semibold">Totebag</span>
-                        </button>
-                        <button onclick="switchProduct('tshirt')" class="product-btn flex flex-col items-center justify-center p-2.5 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600">
-                            <i class="fas fa-tshirt text-lg mb-1"></i>
-                            <span class="text-[9px] font-semibold">Kaos</span>
-                        </button>
-                        <button onclick="switchProduct('pillow')" class="product-btn flex flex-col items-center justify-center p-2.5 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600">
-                            <i class="fas fa-couch text-lg mb-1"></i>
-                            <span class="text-[9px] font-semibold">Bantal</span>
-                        </button>
-                        <button onclick="switchProduct('box')" class="product-btn flex flex-col items-center justify-center p-2.5 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600">
-                            <i class="fas fa-box-open text-lg mb-1"></i>
-                            <span class="text-[9px] font-semibold">Box</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 2. Customization -->
-                <div>
-                    <label class="block text-xs font-bold text-blue-400 uppercase tracking-widest mb-4">Kustomisasi</label>
-                    
-                    <div class="mb-5">
-                        <label class="block text-[10px] font-bold mb-2 text-slate-500">UPLOAD LOGO</label>
-                        <label class="group flex flex-col items-center justify-center w-full h-10 px-4 transition bg-white/50 border-2 border-blue-100 border-dashed rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/50">
-                            <div class="flex items-center space-x-2 text-blue-500 group-hover:text-blue-600">
-                                <i class="fas fa-cloud-upload-alt text-xs"></i>
-                                <span class="text-[10px] font-semibold">Pilih File</span>
-                            </div>
-                            <input type="file" id="upload-texture" class="hidden" accept="image/*">
-                        </label>
-                    </div>
-
-                    <div class="mb-5">
-                        <label class="block text-[10px] font-bold mb-2 text-slate-500">WARNA DASAR</label>
-                        <div class="flex gap-3">
-                            <button onclick="setProductColor(0xffffff)" class="w-8 h-8 rounded-full border border-slate-200 bg-white shadow-sm transition hover:scale-110" title="Putih"></button>
-                            <button onclick="setProductColor(0x1e293b)" class="w-8 h-8 rounded-full border border-slate-600 bg-slate-800 shadow-sm transition hover:scale-110" title="Hitam"></button>
-                            <button onclick="setProductColor(0xef4444)" class="w-8 h-8 rounded-full border border-red-300 bg-red-500 shadow-sm transition hover:scale-110" title="Merah"></button>
-                            <button onclick="setProductColor(0x3b82f6)" class="w-8 h-8 rounded-full border border-blue-300 bg-blue-500 shadow-sm transition hover:scale-110" title="Biru"></button>
-                            <button onclick="setProductColor(0xf59e0b)" class="w-8 h-8 rounded-full border border-amber-300 bg-amber-500 shadow-sm transition hover:scale-110" title="Kuning"></button>
-                            <div class="relative w-8 h-8 rounded-full overflow-hidden border border-slate-200 shadow-sm hover:scale-110 transition cursor-pointer">
-                                <input type="color" id="custom-color-picker" class="absolute -top-2 -left-2 w-12 h-12 cursor-pointer" oninput="setProductColor(this.value)">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 3. Texture Transforms -->
-                <div id="transform-controls" class="bg-white/40 p-4 rounded-2xl border border-white/60 opacity-50 pointer-events-none transition-all duration-300 backdrop-blur-sm">
-                    <div class="flex justify-between items-center mb-3">
-                        <label class="block text-[10px] font-bold text-blue-500 uppercase tracking-widest">Posisi</label>
-                        <button onclick="resetTransform()" class="text-[9px] font-semibold text-blue-400 hover:text-blue-600 transition-colors">Reset</button>
-                    </div>
-                    
-                    <div class="space-y-3">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <div class="flex justify-between text-[9px] font-medium text-slate-500 mb-1">
-                                    <span>Zoom</span><span id="val-scale" class="text-blue-600">1.0x</span>
-                                </div>
-                                <input type="range" min="0.1" max="3.0" step="0.1" value="1.0" oninput="updateTextureTransform('scale', this.value)">
-                            </div>
-                            <div>
-                                <div class="flex justify-between text-[9px] font-medium text-slate-500 mb-1">
-                                   <span>Rotasi</span><span id="val-rot" class="text-blue-600">0°</span>
-                               </div>
-                               <input type="range" min="-3.14" max="3.14" step="0.1" value="0" oninput="updateTextureTransform('rot', this.value)">
-                           </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                 <div class="flex justify-between text-[9px] font-medium text-slate-500 mb-1">
-                                    <span>Geser X</span><span id="val-offx" class="text-blue-600">0</span>
-                                </div>
-                                <input type="range" min="-1.0" max="1.0" step="0.05" value="0" oninput="updateTextureTransform('offx', this.value)">
-                            </div>
-                            <div>
-                                 <div class="flex justify-between text-[9px] font-medium text-slate-500 mb-1">
-                                    <span>Geser Y</span><span id="val-offy" class="text-blue-600">0</span>
-                                </div>
-                                <input type="range" min="-1.0" max="1.0" step="0.05" value="0" oninput="updateTextureTransform('offy', this.value)">
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <!-- Sidebar Content -->
+        <div id="sidebar-content" class="flex flex-col overflow-hidden transition-all duration-300 flex-1">
+            <div class="flex-1 overflow-y-auto custom-scroll p-6 space-y-6">
+                <!-- Content injected via JS (shared with mobile) -->
+                <div id="shared-controls-desktop"></div>
             </div>
-            
-            <!-- Footer / Export -->
             <div class="p-6 pt-0 mt-2 bg-gradient-to-t from-white/40 to-transparent">
-                <div class="flex items-center justify-between mb-4 px-1">
-                    <label class="flex items-center cursor-pointer group">
-                        <div class="relative">
-                            <input type="checkbox" id="shadow-toggle" class="sr-only" checked onchange="toggleShadow(this.checked)">
-                            <div class="w-8 h-4 bg-slate-200 rounded-full shadow-inner transition-colors group-hover:bg-slate-300 peer-checked:bg-blue-500" id="shadow-bg"></div>
-                            <div class="dot absolute left-0.5 top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform duration-300" id="shadow-dot"></div>
-                        </div>
-                        <span class="ml-2 text-[9px] font-bold text-slate-500 group-hover:text-blue-600">SHADOW</span>
-                    </label>
-
-                    <div class="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-                        <button onclick="setFormat('png')" id="btn-png" class="px-2 py-0.5 text-[9px] font-bold rounded bg-white text-blue-600 shadow-sm transition-all">PNG</button>
-                        <button onclick="setFormat('jpg')" id="btn-jpg" class="px-2 py-0.5 text-[9px] font-bold rounded text-slate-400 hover:text-slate-600 transition-all">JPG</button>
-                    </div>
-                </div>
-
-                <button id="download-btn" class="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl shadow-xl shadow-slate-900/20 font-bold text-sm transition-all transform active:scale-95 flex items-center justify-center gap-2 group">
-                    <i class="fas fa-arrow-down-to-line group-hover:translate-y-0.5 transition-transform"></i> Export Mockup
+               <button onclick="exportImage()" class="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl shadow-xl font-bold text-sm transition-all transform active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fas fa-arrow-down-to-line"></i> Export Mockup
                 </button>
             </div>
         </div>
+    </div>
 
+    <!-- ================= MOBILE UI (Bottom Nav & Sheets) ================= -->
+    
+    <!-- Mobile Panels (Hidden by default, slide up) -->
+    <div id="mobile-panel-products" class="md:hidden fixed bottom-[70px] left-0 right-0 h-[60vh] mobile-sheet flex flex-col">
+        <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+            <h3 class="font-bold text-slate-700">Pilih Produk</h3>
+            <button onclick="closeMobilePanels()" class="w-8 h-8 bg-slate-100 rounded-full text-slate-500"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="p-4 overflow-y-auto custom-scroll flex-1" id="mobile-products-container"></div>
+    </div>
+
+    <div id="mobile-panel-edit" class="md:hidden fixed bottom-[70px] left-0 right-0 h-[65vh] mobile-sheet flex flex-col">
+        <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+            <h3 class="font-bold text-slate-700">Edit Desain</h3>
+            <button onclick="closeMobilePanels()" class="w-8 h-8 bg-slate-100 rounded-full text-slate-500"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="p-4 overflow-y-auto custom-scroll flex-1" id="mobile-edit-container"></div>
+    </div>
+
+    <div id="mobile-panel-studio" class="md:hidden fixed bottom-[70px] left-0 right-0 h-[40vh] mobile-sheet flex flex-col">
+        <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+            <h3 class="font-bold text-slate-700">Studio & Lighting</h3>
+            <button onclick="closeMobilePanels()" class="w-8 h-8 bg-slate-100 rounded-full text-slate-500"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="p-4 overflow-y-auto custom-scroll flex-1" id="mobile-studio-container"></div>
+    </div>
+
+    <!-- Mobile Navbar (Fixed Bottom) -->
+    <div class="md:hidden fixed bottom-4 left-4 right-4 bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-white/50 h-16 flex items-center justify-around z-50 px-2">
+        <button onclick="openMobilePanel('products', this)" class="nav-btn flex flex-col items-center gap-1 text-slate-400 p-2 w-16">
+            <i class="fas fa-cube text-lg transition-transform"></i>
+            <span class="text-[9px] font-medium">Produk</span>
+        </button>
+        <button onclick="openMobilePanel('edit', this)" class="nav-btn flex flex-col items-center gap-1 text-slate-400 p-2 w-16">
+            <i class="fas fa-paint-brush text-lg transition-transform"></i>
+            <span class="text-[9px] font-medium">Desain</span>
+        </button>
+        <button onclick="openMobilePanel('studio', this)" class="nav-btn flex flex-col items-center gap-1 text-slate-400 p-2 w-16">
+            <i class="fas fa-sliders-h text-lg transition-transform"></i>
+            <span class="text-[9px] font-medium">Studio</span>
+        </button>
+        <div class="w-[1px] h-8 bg-slate-200 mx-1"></div>
+        <button onclick="exportImage()" class="flex flex-col items-center justify-center w-10 h-10 bg-slate-800 rounded-full text-white shadow-lg active:scale-90 transition-transform">
+            <i class="fas fa-download text-sm"></i>
+        </button>
     </div>
 
     <!-- Canvas -->
     <div id="canvas-container"></div>
+
+    <!-- Template for Controls (Injected to both Desktop & Mobile containers) -->
+    <template id="controls-template">
+        
+        <!-- SECTION 1: PRODUCTS -->
+        <div class="control-section section-products">
+            <label class="block text-xs font-bold text-blue-400 uppercase tracking-widest mb-3">Produk</label>
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="switchProduct('book')" class="product-btn p-btn-book active flex flex-col items-center justify-center p-3 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600">
+                    <i class="fas fa-book text-lg mb-1"></i><span class="text-[9px] font-semibold">Buku</span>
+                </button>
+                <button onclick="switchProduct('box')" class="product-btn p-btn-box flex flex-col items-center justify-center p-3 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600">
+                    <i class="fas fa-box-open text-lg mb-1"></i><span class="text-[9px] font-semibold">Box</span>
+                </button>
+                <button onclick="switchProduct('can')" class="product-btn p-btn-can flex flex-col items-center justify-center p-3 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600">
+                    <i class="fas fa-wine-bottle text-lg mb-1"></i><span class="text-[9px] font-semibold">Kaleng</span>
+                </button>
+                <button onclick="switchProduct('poster')" class="product-btn p-btn-poster flex flex-col items-center justify-center p-3 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600">
+                    <i class="fas fa-image text-lg mb-1"></i><span class="text-[9px] font-semibold">Poster</span>
+                </button>
+                <button onclick="switchProduct('totebag')" class="product-btn p-btn-totebag flex flex-col items-center justify-center p-3 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600">
+                    <i class="fas fa-shopping-bag text-lg mb-1"></i><span class="text-[9px] font-semibold">Totebag</span>
+                </button>
+                <button onclick="switchProduct('pillow')" class="product-btn p-btn-pillow flex flex-col items-center justify-center p-3 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600">
+                    <i class="fas fa-couch text-lg mb-1"></i><span class="text-[9px] font-semibold">Bantal</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- SECTION 2: EDIT DESIGN -->
+        <div class="control-section section-edit mt-6 md:mt-0">
+            <label class="block text-xs font-bold text-blue-400 uppercase tracking-widest mb-3">Material</label>
+            
+            <!-- Side Selector -->
+            <div id="side-selector-container" class="hidden mb-3">
+                <label class="block text-[9px] font-bold mb-1.5 text-slate-500">SISI AKTIF:</label>
+                <div id="side-buttons" class="flex gap-1 flex-wrap"></div>
+            </div>
+
+            <!-- Upload & Tools -->
+            <div class="mb-4 space-y-2">
+                <div class="flex gap-2">
+                    <label class="flex-1 group flex flex-col items-center justify-center h-10 px-4 transition bg-white/50 border-2 border-blue-100 border-dashed rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/50">
+                        <div class="flex items-center space-x-2 text-blue-500 group-hover:text-blue-600">
+                            <i class="fas fa-cloud-upload-alt text-xs"></i>
+                            <span class="text-[10px] font-semibold">Upload Gambar</span>
+                        </div>
+                        <input type="file" id="upload-texture" class="hidden" accept="image/*" onchange="handleUpload(this)">
+                    </label>
+                    <button onclick="removeTexture()" class="w-10 h-10 flex items-center justify-center bg-white/50 border-2 border-red-100 rounded-xl text-red-400 hover:bg-red-50 hover:border-red-300 transition-all"><i class="fas fa-trash-alt text-xs"></i></button>
+                </div>
+                
+                <!-- Pattern Toggle -->
+                <div class="flex items-center justify-between bg-white/40 p-2 rounded-lg border border-white/60">
+                    <span class="text-[10px] font-bold text-slate-500 ml-1">Mode Pola (Ulang)</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="pattern-toggle" class="sr-only peer" onchange="togglePattern(this.checked)">
+                        <div class="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-500"></div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Colors -->
+            <div class="mb-4">
+                <div class="flex justify-between items-center mb-1.5">
+                    <label class="block text-[10px] font-bold text-slate-500">WARNA DASAR</label>
+                    <button onclick="setProductColor(0xffffff)" class="text-[9px] text-blue-500 hover:underline">Reset</button>
+                </div>
+                <div class="flex gap-2.5">
+                    <button onclick="setProductColor(0xffffff)" class="w-7 h-7 rounded-full border border-slate-200 bg-white shadow-sm hover:scale-110 transition"></button>
+                    <button onclick="setProductColor(0x1e293b)" class="w-7 h-7 rounded-full border border-slate-600 bg-slate-800 shadow-sm hover:scale-110 transition"></button>
+                    <button onclick="setProductColor(0xef4444)" class="w-7 h-7 rounded-full border border-red-300 bg-red-500 shadow-sm hover:scale-110 transition"></button>
+                    <button onclick="setProductColor(0x3b82f6)" class="w-7 h-7 rounded-full border border-blue-300 bg-blue-500 shadow-sm hover:scale-110 transition"></button>
+                    <div class="relative w-7 h-7 rounded-full overflow-hidden border border-slate-200 shadow-sm hover:scale-110 transition">
+                        <input type="color" oninput="setProductColor(this.value)" class="absolute -top-2 -left-2 w-12 h-12 cursor-pointer">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transform Controls -->
+            <div id="transform-controls" class="bg-white/40 p-3 rounded-xl border border-white/60 opacity-50 pointer-events-none transition-all">
+                <div class="flex justify-between items-center mb-2">
+                    <label class="block text-[10px] font-bold text-blue-500 uppercase">Posisi</label>
+                    <button onclick="resetTransform()" class="text-[9px] text-blue-400">Reset</button>
+                </div>
+                <div class="grid grid-cols-2 gap-x-3 gap-y-2">
+                    <div>
+                        <div class="flex justify-between text-[9px] text-slate-500"><span>Zoom</span><span id="val-scale">1.0x</span></div>
+                        <input type="range" min="0.1" max="3.0" step="0.1" value="1.0" oninput="updateTextureTransform('scale', this.value)">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[9px] text-slate-500"><span>Rotasi</span><span id="val-rot">0°</span></div>
+                        <input type="range" min="-3.14" max="3.14" step="0.1" value="0" oninput="updateTextureTransform('rot', this.value)">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[9px] text-slate-500"><span>Geser X</span></div>
+                        <input type="range" min="-1.0" max="1.0" step="0.05" value="0" oninput="updateTextureTransform('offx', this.value)">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[9px] text-slate-500"><span>Geser Y</span></div>
+                        <input type="range" min="-1.0" max="1.0" step="0.05" value="0" oninput="updateTextureTransform('offy', this.value)">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 3: STUDIO & LIGHTING -->
+        <div class="control-section section-studio mt-6 md:mt-0">
+            <label class="block text-xs font-bold text-blue-400 uppercase tracking-widest mb-3">Lingkungan</label>
+            
+            <div class="mb-4">
+                <label class="block text-[10px] font-bold mb-1.5 text-slate-500">BACKGROUND</label>
+                <div class="flex gap-2.5">
+                    <button onclick="setBgColor('#f0f9ff')" class="w-7 h-7 rounded-md border border-blue-200 bg-blue-50 hover:scale-105 transition"></button>
+                    <button onclick="setBgColor('#ffffff')" class="w-7 h-7 rounded-md border border-slate-200 bg-white hover:scale-105 transition"></button>
+                    <button onclick="setBgColor('#111827')" class="w-7 h-7 rounded-md border border-slate-600 bg-gray-900 hover:scale-105 transition"></button>
+                    <div class="relative w-7 h-7 rounded-md overflow-hidden border border-slate-200 hover:scale-105 transition">
+                        <input type="color" oninput="setBgColor(this.value)" class="absolute -top-2 -left-2 w-12 h-12 cursor-pointer">
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-[10px] font-bold mb-1.5 text-slate-500">PENCAHAYAAN</label>
+                <input type="range" min="0" max="2" step="0.1" value="1" oninput="updateLightIntensity(this.value)">
+            </div>
+
+            <div class="flex justify-between gap-2">
+                <button onclick="toggleShadow(!this.classList.contains('active')); this.classList.toggle('active')" class="flex-1 py-2 bg-white/50 border border-white/60 rounded-lg text-[10px] font-bold text-slate-500 active:bg-blue-50 active:text-blue-600 active shadow-sm">
+                    SHADOW ON/OFF
+                </button>
+                <button onclick="toggleAutoRotate(!this.classList.contains('active')); this.classList.toggle('active')" class="flex-1 py-2 bg-white/50 border border-white/60 rounded-lg text-[10px] font-bold text-slate-500 active:bg-purple-50 active:text-purple-600 shadow-sm">
+                    AUTO ROTATE
+                </button>
+            </div>
+        </div>
+    </template>
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
     <script>
-        // --- UI & Drag Logic ---
-        const sidebar = document.getElementById('sidebar');
-        const header = document.getElementById('sidebar-header');
-        const openBtn = document.getElementById('open-btn');
-        const content = document.getElementById('sidebar-content');
-        const minIcon = document.getElementById('min-icon');
+        // --- UI Logic: Injection & Mobile Navigation ---
+        
+        // 1. Inject Controls to Desktop and Mobile containers
+        const template = document.getElementById('controls-template').content;
+        
+        // Desktop: Inject All
+        const desktopContainer = document.getElementById('shared-controls-desktop');
+        desktopContainer.appendChild(template.cloneNode(true));
 
-        let isDragging = false;
-        let startX, startY, initialLeft, initialTop;
+        // Mobile: Inject Split Sections
+        // Note: cloneNode(true) creates a new instance, so we need to wire up events carefully 
+        // OR better: Move logic to handle clicks globally regardless of which button was clicked.
+        // We will clone again for mobile panels.
+        
+        const mobileProducts = document.getElementById('mobile-products-container');
+        const mobileEdit = document.getElementById('mobile-edit-container');
+        const mobileStudio = document.getElementById('mobile-studio-container');
+        
+        const t2 = document.getElementById('controls-template').content;
+        
+        // We need to carefully extract sections for mobile
+        // To simplify, let's clone the whole thing into each mobile panel and hide irrelevant parts via CSS in that specific panel context
+        // But that's inefficient. Let's do selective cloning manually or just clone all and hide via JS.
+        
+        const cloneForMobile = t2.cloneNode(true);
+        mobileProducts.appendChild(cloneForMobile.querySelector('.section-products').cloneNode(true));
+        mobileEdit.appendChild(t2.cloneNode(true).querySelector('.section-edit'));
+        mobileStudio.appendChild(t2.cloneNode(true).querySelector('.section-studio'));
 
-        // Mouse Events
-        header.addEventListener('mousedown', startDrag);
-        // Touch Events
-        header.addEventListener('touchstart', startDrag, {passive: false});
-
-        function startDrag(e) {
-            if(e.target.closest('button')) return; // Don't drag if clicking buttons
-            // e.preventDefault(); // Prevent text selection/scrolling
+        // 2. Mobile Nav Logic
+        function openMobilePanel(panelName, btn) {
+            // Close all
+            closeMobilePanels();
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             
-            isDragging = true;
-            header.style.cursor = 'grabbing';
-            
-            if (e.type === 'touchstart') {
-                startX = e.touches[0].clientX;
-                startY = e.touches[0].clientY;
-            } else {
-                startX = e.clientX;
-                startY = e.clientY;
-            }
-            
-            const style = window.getComputedStyle(sidebar);
-            initialLeft = parseInt(style.left);
-            initialTop = parseInt(style.top);
-            
-            if (e.type === 'touchstart') {
-                document.addEventListener('touchmove', onDrag, {passive: false});
-                document.addEventListener('touchend', stopDrag);
-            } else {
-                document.addEventListener('mousemove', onDrag);
-                document.addEventListener('mouseup', stopDrag);
-            }
+            // Open target
+            document.getElementById(`mobile-panel-${panelName}`).classList.add('active');
+            btn.classList.add('active');
         }
 
-        function onDrag(e) {
-            if (!isDragging) return;
-            e.preventDefault(); // Prevent scrolling on mobile
-            
-            let currentX, currentY;
-            
-            if (e.type === 'touchmove') {
-                currentX = e.touches[0].clientX;
-                currentY = e.touches[0].clientY;
-            } else {
-                currentX = e.clientX;
-                currentY = e.clientY;
-            }
-            
-            const dx = currentX - startX;
-            const dy = currentY - startY;
-            
-            // Boundary checks (Keep within screen)
-            let newLeft = initialLeft + dx;
-            let newTop = initialTop + dy;
-            
-            // Simple constraint to keep at least 20px visible
-            if (newTop < 0) newTop = 0;
-            if (newLeft < -200) newLeft = -200;
-            if (newLeft > window.innerWidth - 50) newLeft = window.innerWidth - 50;
-            if (newTop > window.innerHeight - 50) newTop = window.innerHeight - 50;
+        function closeMobilePanels() {
+            document.querySelectorAll('.mobile-sheet').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        }
 
-            sidebar.style.left = `${newLeft}px`;
-            sidebar.style.top = `${newTop}px`;
-            // Unset bottom if set via CSS class initially, allowing free movement
-            sidebar.style.bottom = 'auto'; 
+        // --- Drag Logic for Desktop Sidebar ---
+        const sidebar = document.getElementById('sidebar');
+        const header = document.getElementById('sidebar-header');
+        let isDragging = false, startX, startY, initialLeft, initialTop;
+
+        header.addEventListener('mousedown', (e) => {
+            if(e.target.closest('button')) return;
+            isDragging = true;
+            header.style.cursor = 'grabbing';
+            startX = e.clientX; startY = e.clientY;
+            const s = window.getComputedStyle(sidebar);
+            initialLeft = parseInt(s.left); initialTop = parseInt(s.top);
+            document.addEventListener('mousemove', onDrag);
+            document.addEventListener('mouseup', stopDrag);
+        });
+
+        function onDrag(e) {
+            if(!isDragging) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            sidebar.style.left = `${initialLeft + dx}px`;
+            sidebar.style.top = `${initialTop + dy}px`;
         }
 
         function stopDrag() {
@@ -374,88 +401,12 @@
             header.style.cursor = 'grab';
             document.removeEventListener('mousemove', onDrag);
             document.removeEventListener('mouseup', stopDrag);
-            document.removeEventListener('touchmove', onDrag);
-            document.removeEventListener('touchend', stopDrag);
         }
 
-        // Toggle Visibility (Close/Open)
-        function toggleSidebarVis() {
-            if (sidebar.style.display === 'none') {
-                sidebar.style.display = 'flex';
-                openBtn.classList.add('sidebar-hidden');
-            } else {
-                sidebar.style.display = 'none';
-                openBtn.classList.remove('sidebar-hidden');
-            }
-        }
-
-        // Toggle Minimize (Collapse)
-        function toggleMinimize() {
-            if (content.style.maxHeight === '0px') {
-                // Restore
-                content.style.maxHeight = '80vh';
-                content.style.opacity = '1';
-                minIcon.classList.remove('fa-plus');
-                minIcon.classList.add('fa-minus');
-                sidebar.style.borderRadius = '24px'; // Balikin border radius
-            } else {
-                // Minimize
-                content.style.maxHeight = '0px';
-                content.style.opacity = '0';
-                minIcon.classList.remove('fa-minus');
-                minIcon.classList.add('fa-plus');
-                // Make sidebar looks like just a header pill
-                sidebar.style.borderRadius = '24px'; 
-            }
-        }
-
-        // --- Export Logic ---
-        let exportFormat = 'image/png';
-        let exportExt = 'png';
-
-        function setFormat(fmt) {
-            const btnPng = document.getElementById('btn-png');
-            const btnJpg = document.getElementById('btn-jpg');
-            
-            if (fmt === 'png') {
-                exportFormat = 'image/png';
-                exportExt = 'png';
-                btnPng.className = "px-2 py-0.5 text-[9px] font-bold rounded bg-white text-blue-600 shadow-sm transition-all";
-                btnJpg.className = "px-2 py-0.5 text-[9px] font-bold rounded text-slate-400 hover:text-slate-600 transition-all";
-            } else {
-                exportFormat = 'image/jpeg';
-                exportExt = 'jpg';
-                btnJpg.className = "px-2 py-0.5 text-[9px] font-bold rounded bg-white text-blue-600 shadow-sm transition-all";
-                btnPng.className = "px-2 py-0.5 text-[9px] font-bold rounded text-slate-400 hover:text-slate-600 transition-all";
-            }
-        }
-
-        function toggleShadow(isChecked) {
-            const dot = document.getElementById('shadow-dot');
-            const bg = document.getElementById('shadow-bg');
-            if(isChecked) {
-                dot.style.transform = 'translateX(100%)';
-                bg.style.backgroundColor = '#3b82f6';
-                if(ground) ground.visible = true;
-            } else {
-                dot.style.transform = 'translateX(0)';
-                bg.style.backgroundColor = '#e2e8f0';
-                if(ground) ground.visible = false;
-            }
-        }
-
-        // --- Global Variables ---
-        let currentProduct = 'book';
-        let currentObject = null;
-        let targetMaterial = null; 
-        let currentTexture = null;
-        let texValues = { scale: 1, offx: 0, offy: 0, rot: 0 };
-        const textureLoader = new THREE.TextureLoader(); 
-
-        // --- Three.js Setup ---
+        // --- 3D Scene Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xf0f9ff); 
+        scene.background = new THREE.Color(0xf0f9ff);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(5, 5, 8);
@@ -471,7 +422,7 @@
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
 
-        // --- Lighting ---
+        // Lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
         const spotLight = new THREE.SpotLight(0xffffff, 1.0);
@@ -480,15 +431,11 @@
         spotLight.shadow.mapSize.width = 2048;
         spotLight.shadow.mapSize.height = 2048;
         scene.add(spotLight);
-        const fillLight = new THREE.DirectionalLight(0xe0f2fe, 0.6); 
+        const fillLight = new THREE.DirectionalLight(0xe0f2fe, 0.6);
         fillLight.position.set(-8, 5, 2);
         scene.add(fillLight);
-        const rimLight = new THREE.SpotLight(0x3b82f6, 0.5);
-        rimLight.position.set(-5, 8, -10);
-        rimLight.lookAt(0,0,0);
-        scene.add(rimLight);
-
-        // --- Shadow Catcher ---
+        
+        // Shadow Catcher
         const shadowMat = new THREE.ShadowMaterial({ opacity: 0.2, color: 0x1e3a8a });
         const ground = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), shadowMat);
         ground.rotation.x = -Math.PI / 2;
@@ -496,220 +443,316 @@
         ground.receiveShadow = true;
         scene.add(ground);
 
-        // --- Cloth Normal Map ---
-        function createClothNormal() {
-            const c = document.createElement('canvas');
-            c.width = 512; c.height = 512;
-            const ctx = c.getContext('2d');
-            ctx.fillStyle = '#8080ff'; 
-            ctx.fillRect(0,0,512,512);
-            for(let i=0; i<10000; i++) {
-                const x = Math.random()*512;
-                const y = Math.random()*512;
-                ctx.fillStyle = Math.random() > 0.5 ? '#8585ff' : '#7a7aff';
-                ctx.fillRect(x,y,2,2);
-            }
-            const tex = new THREE.CanvasTexture(c);
-            tex.wrapS = THREE.RepeatWrapping;
-            tex.wrapT = THREE.RepeatWrapping;
-            tex.repeat.set(4, 4);
-            return tex;
-        }
-        const clothNormalMap = createClothNormal();
-
         // --- Product Generators ---
+        const textureLoader = new THREE.TextureLoader();
+        let currentObject = null;
+        let currentMaterials = {};
+        let activeMaterialKey = 'main';
+        let currentProduct = '';
+        let isPatternMode = false;
+
+        // 1. BOOK
         function createBook() {
             const group = new THREE.Group();
             const geo = new THREE.BoxGeometry(3.2, 5.0, 0.6);
             const matPages = new THREE.MeshStandardMaterial({ color: 0xffffff });
             const matSpine = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.4 });
-            const matCover = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.1 });
+            const matCover = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
             const matBack = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.4 });
-            const materials = [matPages, matSpine, matPages, matPages, matCover, matBack];
-            const mesh = new THREE.Mesh(geo, materials);
-            mesh.position.y = 2.5; mesh.castShadow = true; mesh.receiveShadow = true;
+            const mesh = new THREE.Mesh(geo, [matPages, matSpine, matPages, matPages, matCover, matBack]);
+            mesh.position.y = 2.5; mesh.castShadow = true;
             group.add(mesh);
-            targetMaterial = matCover; 
-            return { mesh: group, materials: { main: matCover, secondary: [matSpine, matBack] } };
+            return { mesh: group, materials: { 'front': matCover, 'back': matBack, 'spine': matSpine }, sides: [{key:'front', label:'Depan'}, {key:'back', label:'Belakang'}, {key:'spine', label:'Punggung'}] };
         }
 
-        function createMug() {
-            const group = new THREE.Group();
-            const bodyGeo = new THREE.CylinderGeometry(1.5, 1.5, 3.5, 64);
-            const matInside = new THREE.MeshStandardMaterial({ color: 0xffffff });
-            const matBody = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2, metalness: 0.1 });
-            const bodyMesh = new THREE.Mesh(bodyGeo, [matBody, matInside, matInside]);
-            bodyMesh.position.y = 1.75; bodyMesh.castShadow = true; bodyMesh.receiveShadow = true;
-            bodyGeo.computeBoundingBox();
-            const handleGeo = new THREE.TorusGeometry(0.8, 0.15, 16, 50, Math.PI + 1);
-            const matHandle = new THREE.MeshStandardMaterial({ color: 0xffffff });
-            const handleMesh = new THREE.Mesh(handleGeo, matHandle);
-            handleMesh.position.set(1.5, 1.8, 0); handleMesh.rotation.z = Math.PI; handleMesh.castShadow = true;
-            group.add(bodyMesh); group.add(handleMesh);
-            targetMaterial = matBody;
-            return { mesh: group, materials: { main: matBody, secondary: [matHandle] } };
-        }
-
-        function createTotebag() {
-            const group = new THREE.Group();
-            const bagGeo = new THREE.BoxGeometry(3.5, 4.0, 0.3);
-            const matFabric = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, normalMap: clothNormalMap, normalScale: new THREE.Vector2(0.5, 0.5) });
-            const bag = new THREE.Mesh(bagGeo, matFabric);
-            bag.position.y = 2.0; bag.castShadow = true;
-            const handleGeo = new THREE.TorusGeometry(0.8, 0.05, 16, 50, Math.PI);
-            const handle1 = new THREE.Mesh(handleGeo, matFabric);
-            handle1.position.set(0, 4.0, 0.15);
-            const handle2 = new THREE.Mesh(handleGeo, matFabric);
-            handle2.position.set(0, 4.0, -0.15);
-            group.add(bag); group.add(handle1); group.add(handle2);
-            targetMaterial = matFabric;
-            return { mesh: group, materials: { main: matFabric, secondary: [] } };
-        }
-
+        // 2. BOX
         function createBox() {
             const group = new THREE.Group();
-            const boxGeo = new THREE.BoxGeometry(3, 3, 3);
-            const matBox = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
-            const box = new THREE.Mesh(boxGeo, matBox);
-            box.position.y = 1.5; box.castShadow = true; box.receiveShadow = true;
-            group.add(box);
-            targetMaterial = matBox;
-            return { mesh: group, materials: { main: matBox, secondary: [] } };
+            const geo = new THREE.BoxGeometry(3, 3, 3);
+            const matMain = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+            const matTop = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+            const matSide = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+            // Right, Left, Top, Bottom, Front, Back
+            const mesh = new THREE.Mesh(geo, [matSide, matSide, matTop, matMain, matMain, matMain]);
+            mesh.position.y = 1.5; mesh.castShadow = true;
+            group.add(mesh);
+            return { mesh: group, materials: { 'front': matMain, 'top': matTop, 'side': matSide }, sides: [{key:'front', label:'Depan'}, {key:'top', label:'Atas'}, {key:'side', label:'Samping'}] };
         }
 
-        function createTShirt() {
+        // 3. CAN (SODA) - NEW
+        function createCan() {
             const group = new THREE.Group();
-            const bodyGeo = new THREE.BoxGeometry(4.0, 0.5, 3.5);
-            const matCloth = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8, normalMap: clothNormalMap, normalScale: new THREE.Vector2(1, 1) });
-            const matPlain = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8, normalMap: clothNormalMap });
-            const materials = [matPlain, matPlain, matCloth, matPlain, matPlain, matPlain];
-            const body = new THREE.Mesh(bodyGeo, materials);
-            body.position.y = 0.25; body.castShadow = true; body.receiveShadow = true;
-            const collarGeo = new THREE.TorusGeometry(0.6, 0.1, 16, 50);
-            const collar = new THREE.Mesh(collarGeo, matPlain);
-            collar.rotation.x = -Math.PI / 2; collar.position.set(0, 0.5, 1.0); collar.scale.set(1, 1, 0.5);
-            group.add(body); group.add(collar);
-            targetMaterial = matCloth; 
-            return { mesh: group, materials: { main: matCloth, secondary: [matPlain] } };
+            const geo = new THREE.CylinderGeometry(1.2, 1.2, 4.5, 64);
+            const matBody = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2, metalness: 0.4 });
+            const matMetal = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.2, metalness: 0.8 });
+            
+            const mesh = new THREE.Mesh(geo, [matBody, matMetal, matMetal]); // Side, Top, Bottom
+            mesh.position.y = 2.25; mesh.castShadow = true;
+            group.add(mesh);
+            
+            // Rim detail
+            const rimGeo = new THREE.TorusGeometry(1.2, 0.05, 16, 64);
+            const rimTop = new THREE.Mesh(rimGeo, matMetal);
+            rimTop.rotation.x = Math.PI/2; rimTop.position.y = 4.5;
+            group.add(rimTop);
+
+            return { mesh: group, materials: { 'main': matBody } };
         }
 
+        // 4. POSTER FRAME - NEW
+        function createPoster() {
+            const group = new THREE.Group();
+            // Frame
+            const frameGeo = new THREE.BoxGeometry(3.2, 4.5, 0.2);
+            const matFrame = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.8 }); // Black wood
+            const matArt = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 });
+            
+            // Materials: sides are frame, front is art
+            const materials = [matFrame, matFrame, matFrame, matFrame, matArt, matFrame];
+            const mesh = new THREE.Mesh(frameGeo, materials);
+            mesh.position.y = 2.25; mesh.castShadow = true;
+            
+            // Stand leg (back)
+            const legGeo = new THREE.BoxGeometry(0.5, 3, 0.1);
+            const leg = new THREE.Mesh(legGeo, matFrame);
+            leg.position.set(0, 2, -0.5); leg.rotation.x = -0.2;
+            
+            group.add(mesh); group.add(leg);
+            mesh.rotation.x = -0.1; // Slight tilt
+            
+            return { mesh: group, materials: { 'main': matArt } };
+        }
+
+        // 5. MUG & 6. TOTEBAG (Reused)
+        function createMug() {
+            const group = new THREE.Group();
+            const mesh = new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.5,3.5,64), new THREE.MeshStandardMaterial({color:0xffffff}));
+            mesh.position.y = 1.75; mesh.castShadow = true;
+            const handle = new THREE.Mesh(new THREE.TorusGeometry(0.8,0.15,16,50,3.5), new THREE.MeshStandardMaterial({color:0xffffff}));
+            handle.position.set(1.5,1.8,0); handle.rotation.z=Math.PI;
+            group.add(mesh); group.add(handle);
+            return { mesh: group, materials: {'main': mesh.material, 'handle': handle.material} };
+        }
+        function createTotebag() {
+            const group = new THREE.Group();
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(3.5,4,0.3), new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.9}));
+            mesh.position.y = 2; mesh.castShadow = true;
+            const h1 = new THREE.Mesh(new THREE.TorusGeometry(0.8,0.05,16,50,Math.PI), mesh.material);
+            h1.position.set(0,4,0.15);
+            group.add(mesh); group.add(h1);
+            return { mesh: group, materials: {'main': mesh.material} };
+        }
         function createPillow() {
             const group = new THREE.Group();
-            const geo = new THREE.SphereGeometry(2.5, 64, 64);
-            const matFabric = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1.0, normalMap: clothNormalMap, normalScale: new THREE.Vector2(0.5, 0.5) });
-            const pillow = new THREE.Mesh(geo, matFabric);
-            pillow.scale.set(1, 0.6, 1); pillow.position.y = 1.5; pillow.castShadow = true; pillow.receiveShadow = true;
-            group.add(pillow);
-            targetMaterial = matFabric;
-            return { mesh: group, materials: { main: matFabric, secondary: [] } };
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(2.5,64,32), new THREE.MeshStandardMaterial({color:0xffffff, roughness:1}));
+            mesh.scale.set(1,0.6,1); mesh.position.y=1.5; mesh.castShadow=true;
+            group.add(mesh);
+            return { mesh: group, materials: {'main': mesh.material} };
         }
 
-        // --- Logic Switch Product ---
-        const productStore = { materials: null };
+        // --- Controller Logic ---
 
         function switchProduct(type) {
-            document.querySelectorAll('.product-btn').forEach(btn => btn.classList.remove('active'));
-            event && event.currentTarget && event.currentTarget.classList.add('active');
             currentProduct = type;
-            if (currentObject) scene.remove(currentObject);
-            let result;
-            if (type === 'book') result = createBook();
-            else if (type === 'mug') result = createMug();
-            else if (type === 'totebag') result = createTotebag();
-            else if (type === 'box') result = createBox();
-            else if (type === 'tshirt') result = createTShirt();
-            else if (type === 'pillow') result = createPillow();
-            currentObject = result.mesh;
-            productStore.materials = result.materials;
+            if(currentObject) scene.remove(currentObject);
+            
+            // Highlight Button (Both Desktop & Mobile)
+            document.querySelectorAll('.product-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll(`.p-btn-${type}`).forEach(b => b.classList.add('active'));
+
+            let res;
+            if(type==='book') res = createBook();
+            else if(type==='box') res = createBox();
+            else if(type==='can') res = createCan();
+            else if(type==='poster') res = createPoster();
+            else if(type==='mug') res = createMug();
+            else if(type==='totebag') res = createTotebag();
+            else if(type==='pillow') res = createPillow();
+
+            currentObject = res.mesh;
+            currentMaterials = res.materials;
             scene.add(currentObject);
-            if (type === 'tshirt') { camera.position.set(0, 7, 3); controls.target.set(0, 0, 0); } 
-            else { camera.position.set(5, 5, 8); controls.target.set(0, 2, 0); }
-            controls.update();
-            if (currentTexture) applyTextureToTarget(); else targetMaterial.color.setHex(0xffffff);
-            const colVal = document.getElementById('custom-color-picker').value;
-            setProductColor(colVal);
+
+            // Handle Sides
+            activeMaterialKey = 'main';
+            const sideContainers = document.querySelectorAll('#side-selector-container');
+            const sideBtnsContainers = document.querySelectorAll('#side-buttons');
+            
+            sideBtnsContainers.forEach(el => el.innerHTML = '');
+            
+            if(res.sides) {
+                sideContainers.forEach(el => el.classList.remove('hidden'));
+                activeMaterialKey = res.sides[0].key;
+                
+                res.sides.forEach((side, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = `side-btn px-2 py-1 text-[9px] font-bold rounded border border-slate-300 bg-white text-slate-500 hover:bg-slate-50 transition mr-1 ${idx===0?'active':''}`;
+                    btn.innerText = side.label;
+                    btn.dataset.key = side.key;
+                    btn.onclick = () => {
+                        activeMaterialKey = side.key;
+                        document.querySelectorAll('.side-btn').forEach(b => b.classList.remove('active'));
+                        document.querySelectorAll(`.side-btn[data-key="${side.key}"]`).forEach(b => b.classList.add('active'));
+                        checkTransformVis();
+                    };
+                    sideBtnsContainers.forEach(c => c.appendChild(btn.cloneNode(true)));
+                });
+                
+                // Re-bind events to cloned buttons
+                sideBtnsContainers.forEach(c => {
+                    Array.from(c.children).forEach(btn => {
+                        btn.onclick = () => {
+                            activeMaterialKey = btn.dataset.key;
+                            document.querySelectorAll('.side-btn').forEach(b => b.classList.remove('active'));
+                            document.querySelectorAll(`.side-btn[data-key="${btn.dataset.key}"]`).forEach(b => b.classList.add('active'));
+                            checkTransformVis();
+                        }
+                    })
+                })
+
+            } else {
+                sideContainers.forEach(el => el.classList.add('hidden'));
+            }
+            
+            // Reset UI inputs
+            document.querySelectorAll('input[type="file"]').forEach(i => i.value = '');
+            checkTransformVis();
         }
 
-        // --- Texture Logic ---
-        function applyTextureToTarget() {
-            if (!targetMaterial || !currentTexture) return;
-            targetMaterial.map = currentTexture;
-            targetMaterial.needsUpdate = true;
-            targetMaterial.color.setHex(0xffffff);
-            updateTextureMatrix();
-        }
-        function updateTextureMatrix() {
-            if (!currentTexture) return;
-            currentTexture.center.set(0.5, 0.5);
-            currentTexture.rotation = -parseFloat(texValues.rot);
-            const s = 1 / parseFloat(texValues.scale);
-            currentTexture.repeat.set(s, s);
-            currentTexture.offset.set(parseFloat(texValues.offx), parseFloat(texValues.offy));
-        }
-        window.updateTextureTransform = (prop, val) => {
-            texValues[prop] = val;
-            if(prop === 'scale') document.getElementById('val-scale').innerText = val + 'x';
-            if(prop === 'rot') document.getElementById('val-rot').innerText = Math.round(val * 57.29) + '°';
-            if(prop === 'offx') document.getElementById('val-offx').innerText = val;
-            if(prop === 'offy') document.getElementById('val-offy').innerText = val;
-            updateTextureMatrix();
-        };
-        window.resetTransform = () => {
-            texValues = { scale: 1, offx: 0, offy: 0, rot: 0 };
-            document.querySelectorAll('#transform-controls input').forEach(inp => {
-                if(inp.getAttribute('oninput').includes('scale')) inp.value = 1; else inp.value = 0;
+        function checkTransformVis() {
+            const mat = currentMaterials[activeMaterialKey];
+            const opacity = (mat && mat.map) ? '1' : '0.5';
+            const pointer = (mat && mat.map) ? 'auto' : 'none';
+            document.querySelectorAll('#transform-controls').forEach(el => {
+                el.style.opacity = opacity;
+                el.style.pointerEvents = pointer;
             });
-            updateTextureTransform('scale', 1);
         }
 
-        // --- Event Listeners ---
-        document.getElementById('upload-texture').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
+        // --- Texture & Color ---
+        function handleUpload(input) {
+            const file = input.files[0];
+            if(!file) return;
             const reader = new FileReader();
-            reader.onload = function(ev) {
-                textureLoader.load(ev.target.result, function(texture) {
-                    texture.minFilter = THREE.LinearFilter;
-                    texture.magFilter = THREE.LinearFilter;
-                    texture.generateMipmaps = false; 
+            reader.onload = (e) => {
+                textureLoader.load(e.target.result, (tex) => {
+                    tex.colorSpace = THREE.SRGBColorSpace;
+                    tex.minFilter = THREE.LinearFilter;
                     
-                    texture.needsUpdate = true;
-                    
-                    document.getElementById('transform-controls').style.opacity = '1';
-                    document.getElementById('transform-controls').style.pointerEvents = 'auto';
-                    currentTexture = texture;
-                    applyTextureToTarget();
-                }, undefined, function(err) {
-                    console.error("Error loading texture:", err);
-                    alert("Gagal memuat gambar. Pastikan format PNG/JPG.");
+                    const mat = currentMaterials[activeMaterialKey];
+                    if(mat) {
+                        mat.map = tex;
+                        mat.color.setHex(0xffffff);
+                        mat.needsUpdate = true;
+                        // Apply tiling if enabled
+                        applyPatternMode(tex);
+                        checkTransformVis();
+                    }
                 });
             };
             reader.readAsDataURL(file);
-        });
+        }
 
-        window.setProductColor = (val) => {
-            const color = new THREE.Color(val);
-            if (targetMaterial) targetMaterial.color = color;
-            if (productStore.materials && productStore.materials.secondary) {
-                productStore.materials.secondary.forEach(mat => mat.color = color);
+        function togglePattern(checked) {
+            isPatternMode = checked;
+            // Apply to all current textures
+            Object.values(currentMaterials).forEach(mat => {
+                if(mat.map) {
+                    applyPatternMode(mat.map);
+                    mat.needsUpdate = true;
+                }
+            });
+        }
+
+        function applyPatternMode(tex) {
+            if(isPatternMode) {
+                tex.wrapS = THREE.RepeatWrapping;
+                tex.wrapT = THREE.RepeatWrapping;
+                tex.repeat.set(2, 2); // Default tile
+            } else {
+                tex.wrapS = THREE.ClampToEdgeWrapping;
+                tex.wrapT = THREE.ClampToEdgeWrapping;
+                tex.repeat.set(1, 1);
+            }
+            tex.needsUpdate = true;
+        }
+
+        window.setProductColor = (hex) => {
+            const col = new THREE.Color(hex);
+            const mat = currentMaterials[activeMaterialKey];
+            if(mat) mat.color = col;
+            if(currentProduct === 'mug' && activeMaterialKey==='main' && currentMaterials.handle) currentMaterials.handle.color = col;
+        };
+
+        window.setBgColor = (hex) => {
+            document.body.style.background = hex;
+            scene.background = new THREE.Color(hex);
+        };
+
+        window.updateTextureTransform = (type, val) => {
+            const mat = currentMaterials[activeMaterialKey];
+            if(!mat || !mat.map) return;
+            const tex = mat.map;
+            val = parseFloat(val);
+            
+            if(type==='scale') {
+                const s = 1/val;
+                tex.repeat.set(s, s);
+                // If tiling, we might want different logic, but simple scaling works
+            }
+            if(type==='rot') tex.rotation = -val;
+            if(type==='offx') tex.offset.x = val;
+            if(type==='offy') tex.offset.y = val;
+            
+            // Sync all sliders in UI
+            document.querySelectorAll('#val-'+type).forEach(el => el.innerText = type==='rot' ? Math.round(val*57.29)+'°' : (type==='scale' ? val+'x' : val));
+        };
+
+        window.removeTexture = () => {
+            const mat = currentMaterials[activeMaterialKey];
+            if(mat) {
+                mat.map = null;
+                mat.needsUpdate = true;
+                checkTransformVis();
             }
         };
 
-        // Export Handler
-        document.getElementById('download-btn').addEventListener('click', () => {
+        window.updateLightIntensity = (val) => {
+            spotLight.intensity = parseFloat(val);
+            ambientLight.intensity = parseFloat(val) * 0.5;
+        };
+
+        window.toggleShadow = (active) => {
+            ground.visible = active;
+        };
+
+        let isRotating = false;
+        window.toggleAutoRotate = (active) => { isRotating = active; };
+
+        window.exportImage = () => {
             renderer.render(scene, camera);
             const link = document.createElement('a');
-            link.download = `mockup-${currentProduct}-${Date.now()}.${exportExt}`;
-            link.href = renderer.domElement.toDataURL(exportFormat, 1.0);
+            link.download = 'mockup-studio-export.png';
+            link.href = renderer.domElement.toDataURL('image/png');
             link.click();
-        });
+        };
 
-        // Init
+        // --- Init ---
         switchProduct('book');
-        function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            if(isRotating && currentObject) currentObject.rotation.y += 0.005;
+            controls.update();
+            renderer.render(scene, camera);
+        }
         animate();
-        window.addEventListener('resize', () => { camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
 
     </script>
 </body>
