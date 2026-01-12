@@ -3,756 +3,720 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Universal Product Mockup Studio - Ultimate Edition</title>
-    <!-- Tailwind CSS -->
+    <title>Diginex MockLab BETA</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            background: #f0f9ff; 
-            font-family: 'Inter', sans-serif; 
-            touch-action: none; 
-            transition: background 0.5s ease;
-        }
+        body { margin: 0; overflow: hidden; background: #f0f9ff; font-family: 'Inter', sans-serif; touch-action: none; }
         #canvas-container { width: 100vw; height: 100vh; outline: none; }
         
-        /* DESKTOP GLASS PANEL */
+        /* === ANIMATIONS === */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        @keyframes pulseSlow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .animate-pulse-slow { animation: pulseSlow 3s ease-in-out infinite; }
+
+        /* === UI STYLES === */
         .liquid-glass {
-            background: rgba(255, 255, 255, 0.75);
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.6);
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-            border-radius: 24px;
         }
 
-        /* MOBILE BOTTOM SHEET */
+        .desktop-panel { border-radius: 24px; }
+
+        /* Mobile Sheet Animation */
         .mobile-sheet {
             background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(15px);
-            border-top: 1px solid rgba(255,255,255,0.5);
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-top: 1px solid rgba(255,255,255,0.8);
             border-radius: 24px 24px 0 0;
-            transform: translateY(100%);
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: translateY(110%);
+            transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            z-index: 60; /* Above backdrop */
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
+        }
+        .mobile-sheet.active { transform: translateY(0); }
+        
+        .mobile-nav {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
             z-index: 40;
         }
-        .mobile-sheet.active {
-            transform: translateY(0);
+
+        /* Mobile Backdrop */
+        #mobile-backdrop {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.2);
+            backdrop-filter: blur(2px);
+            z-index: 50;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease;
         }
-        
-        /* COMPONENTS */
-        .product-btn {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-        }
-        
+        #mobile-backdrop.active { opacity: 1; pointer-events: auto; }
+
+        /* Interactive Elements */
+        .product-btn { transition: all 0.2s; position: relative; }
         .product-btn.active {
-            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
-            color: white;
-            border-color: transparent;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-            transform: translateY(-2px);
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white; border-color: transparent;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); transform: translateY(-2px);
         }
+        .side-btn.active { background-color: #3b82f6; color: white; border-color: #3b82f6; }
+        .opt-btn { transition: all 0.2s; }
+        .opt-btn.active { border-color: #3b82f6; background-color: #eff6ff; color: #1d4ed8; font-weight: bold; }
 
-        .side-btn.active {
-            background-color: #3b82f6;
-            color: white;
-            border-color: #3b82f6;
-        }
+        /* Range Slider */
+        input[type=range] { -webkit-appearance: none; width: 100%; height: 6px; border-radius: 5px; background: #cbd5e1; outline: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #3b82f6; cursor: pointer; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: transform 0.1s; }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 
-        /* Custom Scrollbar */
-        .custom-scroll::-webkit-scrollbar { width: 4px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
-
-        input[type=range] {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 6px;
-            border-radius: 5px;
-            background: #e2e8f0;
-            outline: none;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #3b82f6;
-            cursor: pointer;
-            border: 2px solid white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-        }
-
-        /* Nav Icon Active State */
         .nav-btn.active i { color: #3b82f6; transform: scale(1.1); }
         .nav-btn.active span { color: #3b82f6; font-weight: 700; }
-
-        .drag-handle { cursor: grab; }
-        .drag-handle:active { cursor: grabbing; }
+        
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        
+        .drag-handle { cursor: grab; } .drag-handle:active { cursor: grabbing; }
+        .hidden-important { display: none !important; }
+        
+        /* Sheet Handle for Mobile */
+        .sheet-handle {
+            width: 40px; height: 4px; background: #cbd5e1; border-radius: 2px; margin: 8px auto 0;
+        }
     </style>
 </head>
 <body class="text-slate-700">
 
-    <!-- 3D PREVIEW LABEL -->
-    <div class="absolute top-6 right-6 z-30 pointer-events-none select-none hidden md:block">
-        <div class="bg-white/40 backdrop-blur-md border border-white/60 px-4 py-1.5 rounded-full flex items-center gap-2 shadow-sm">
-            <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span class="text-[10px] font-bold text-slate-600 tracking-wider">3D PREVIEW</span>
+    <!-- Mobile Header (Updated) -->
+    <div class="md:hidden fixed top-4 left-4 z-30 select-none pointer-events-none animate-fade-in-up">
+        <div class="bg-white/70 backdrop-blur-md px-4 py-2 rounded-full border border-white/60 shadow-sm flex items-center gap-2">
+            <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse-slow"></div>
+            <h1 class="text-xs font-bold text-slate-700 tracking-wide">
+                Diginex <span class="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded ml-1 font-extrabold border border-blue-200">BETA VER</span>
+            </h1>
         </div>
     </div>
 
-    <!-- ================= DESKTOP UI (Sidebar) ================= -->
-    <div class="hidden md:flex absolute top-4 left-4 w-80 max-w-[95vw] liquid-glass shadow-2xl flex-col z-50 max-h-[90vh]" id="sidebar">
-        <!-- Sidebar Header -->
-        <div id="sidebar-header" class="drag-handle p-5 border-b border-white/50 flex justify-between items-start select-none bg-white/10 rounded-t-[24px]">
+    <!-- 3D Preview Label & Tools -->
+    <div class="fixed top-4 right-4 z-30 flex gap-2 animate-fade-in-up" style="animation-delay: 0.1s;">
+        <button onclick="toggleGrid()" class="bg-white/70 hover:bg-white backdrop-blur-md border border-white/60 w-10 h-10 rounded-full flex items-center justify-center text-slate-600 transition-all shadow-sm active:scale-95" title="Toggle Grid">
+            <i class="fas fa-border-all text-xs"></i>
+        </button>
+        <button onclick="resetCamera()" class="bg-white/70 hover:bg-white backdrop-blur-md border border-white/60 w-10 h-10 rounded-full flex items-center justify-center text-slate-600 transition-all shadow-sm active:scale-95" title="Reset Camera">
+            <i class="fas fa-video text-xs"></i>
+        </button>
+        <div class="hidden md:flex bg-white/70 backdrop-blur-md border border-white/60 px-4 items-center rounded-full shadow-sm select-none">
+            <div class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse mr-2"></div>
+            <span class="text-[10px] font-bold text-slate-600 tracking-wider">3D VIEW</span>
+        </div>
+    </div>
+
+    <!-- MOBILE BACKDROP -->
+    <div id="mobile-backdrop" onclick="closeSheets()"></div>
+
+    <!-- DESKTOP SIDEBAR -->
+    <div class="hidden md:flex fixed top-4 left-4 bottom-4 w-80 max-w-[320px] liquid-glass desktop-panel shadow-2xl flex-col z-40 animate-fade-in-up" id="sidebar">
+        <!-- Header -->
+        <div class="p-5 border-b border-white/50 flex justify-between items-center select-none bg-white/30 rounded-t-[24px]">
             <div>
-                <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-500">
-                    Mockup Studio
-                </h1>
-                <p class="text-[10px] text-slate-500 font-medium tracking-wide">Desktop Edition •</p>
-            </div>
-            <button onclick="document.getElementById('sidebar-content').classList.toggle('hidden')" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-blue-50 text-slate-400 hover:text-blue-500 transition-colors">
-                <i class="fas fa-minus text-xs"></i>
-            </button>
-        </div>
-
-        <!-- Sidebar Content -->
-        <div id="sidebar-content" class="flex flex-col overflow-hidden transition-all duration-300 flex-1">
-            <div class="flex-1 overflow-y-auto custom-scroll p-6 space-y-6">
-                <!-- Content injected via JS (shared with mobile) -->
-                <div id="shared-controls-desktop"></div>
-            </div>
-            <div class="p-6 pt-0 mt-2 bg-gradient-to-t from-white/40 to-transparent">
-               <button onclick="exportImage()" class="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl shadow-xl font-bold text-sm transition-all transform active:scale-95 flex items-center justify-center gap-2">
-                    <i class="fas fa-arrow-down-to-line"></i> Export Mockup
-                </button>
+                <h1 class="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-indigo-600">Diginex MockLab</h1>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="text-[9px] bg-blue-600 text-white px-1.5 py-0.5 rounded font-bold animate-pulse-slow">BETA VER</span>
+                    <p class="text-[9px] text-slate-500 font-medium">Ultimate Studio</p>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- ================= MOBILE UI (Bottom Nav & Sheets) ================= -->
-    
-    <!-- Mobile Panels (Hidden by default, slide up) -->
-    <div id="mobile-panel-products" class="md:hidden fixed bottom-[70px] left-0 right-0 h-[60vh] mobile-sheet flex flex-col">
-        <div class="p-4 border-b border-slate-100 flex justify-between items-center">
-            <h3 class="font-bold text-slate-700">Pilih Produk</h3>
-            <button onclick="closeMobilePanels()" class="w-8 h-8 bg-slate-100 rounded-full text-slate-500"><i class="fas fa-times"></i></button>
+        <!-- Content Area -->
+        <div class="flex flex-col flex-1 overflow-hidden min-h-0">
+            <!-- View 1: Controls -->
+            <div id="desktop-view-main" class="flex flex-col h-full">
+                <div class="flex-1 overflow-y-auto custom-scroll p-5 space-y-6" id="desktop-controls-mount"></div>
+                <!-- Export Button -->
+                <div class="p-5 pt-2 bg-gradient-to-t from-white/60 to-transparent shrink-0">
+                    <button onclick="openExportMenu('desktop')" class="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl shadow-lg font-bold text-xs transition-transform active:scale-95 flex items-center justify-center gap-2">
+                        <i class="fas fa-share-square"></i> Export & Save
+                    </button>
+                </div>
+            </div>
+            <!-- View 2: Export -->
+            <div id="desktop-view-export" class="hidden h-full flex-col bg-white/50">
+                <div class="p-3 border-b border-white/50 shrink-0"><button onclick="closeExportMenu('desktop')" class="text-xs font-bold text-slate-500 hover:text-blue-600 flex items-center gap-1"><i class="fas fa-arrow-left"></i> KEMBALI</button></div>
+                <div class="flex-1 overflow-y-auto custom-scroll p-5" id="desktop-export-mount"></div>
+                <div class="p-5 pt-2 shrink-0"><button onclick="processExport()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg font-bold text-xs transition-transform active:scale-95 flex items-center justify-center gap-2"><i class="fas fa-download"></i> DOWNLOAD</button></div>
+            </div>
         </div>
-        <div class="p-4 overflow-y-auto custom-scroll flex-1" id="mobile-products-container"></div>
     </div>
 
-    <div id="mobile-panel-edit" class="md:hidden fixed bottom-[70px] left-0 right-0 h-[65vh] mobile-sheet flex flex-col">
-        <div class="p-4 border-b border-slate-100 flex justify-between items-center">
-            <h3 class="font-bold text-slate-700">Edit Desain</h3>
-            <button onclick="closeMobilePanels()" class="w-8 h-8 bg-slate-100 rounded-full text-slate-500"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="p-4 overflow-y-auto custom-scroll flex-1" id="mobile-edit-container"></div>
+    <!-- MOBILE SHEETS -->
+    <div id="sheet-products" class="md:hidden fixed bottom-0 left-0 right-0 h-[60vh] mobile-sheet flex flex-col">
+        <div class="sheet-handle"></div>
+        <div class="p-4 border-b border-slate-100 flex justify-between items-center mt-1"><span class="font-bold text-sm text-slate-700">Pilih Produk</span><button onclick="closeSheets()" class="w-8 h-8 bg-slate-100 rounded-full text-slate-500"><i class="fas fa-times text-xs"></i></button></div>
+        <div class="flex-1 overflow-y-auto p-4 pb-24" id="mobile-products-mount"></div>
+    </div>
+    <div id="sheet-edit" class="md:hidden fixed bottom-0 left-0 right-0 h-[65vh] mobile-sheet flex flex-col">
+        <div class="sheet-handle"></div>
+        <div class="p-4 border-b border-slate-100 flex justify-between items-center mt-1"><span class="font-bold text-sm text-slate-700">Edit Desain</span><button onclick="closeSheets()" class="w-8 h-8 bg-slate-100 rounded-full text-slate-500"><i class="fas fa-times text-xs"></i></button></div>
+        <div class="flex-1 overflow-y-auto p-4 pb-24" id="mobile-edit-mount"></div>
+    </div>
+    <div id="sheet-studio" class="md:hidden fixed bottom-0 left-0 right-0 h-[50vh] mobile-sheet flex flex-col">
+        <div class="sheet-handle"></div>
+        <div class="p-4 border-b border-slate-100 flex justify-between items-center mt-1"><span class="font-bold text-sm text-slate-700">Studio</span><button onclick="closeSheets()" class="w-8 h-8 bg-slate-100 rounded-full text-slate-500"><i class="fas fa-times text-xs"></i></button></div>
+        <div class="flex-1 overflow-y-auto p-4 pb-24" id="mobile-studio-mount"></div>
+    </div>
+    <div id="sheet-export" class="md:hidden fixed bottom-0 left-0 right-0 h-auto min-h-[50vh] mobile-sheet flex flex-col z-[70]">
+        <div class="sheet-handle"></div>
+        <div class="p-4 border-b border-slate-100 flex justify-between items-center mt-1"><span class="font-bold text-sm text-slate-700">Export Options</span><button onclick="closeExportMenu('mobile')" class="w-8 h-8 bg-slate-100 rounded-full text-slate-500"><i class="fas fa-times text-xs"></i></button></div>
+        <div class="flex-1 overflow-y-auto p-4 pb-20" id="mobile-export-mount"></div>
+        <div class="p-4 border-t border-slate-200 bg-white/80 absolute bottom-0 left-0 right-0"><button onclick="processExport()" class="w-full py-3 bg-blue-600 text-white rounded-xl shadow-lg font-bold text-sm">Download</button></div>
     </div>
 
-    <div id="mobile-panel-studio" class="md:hidden fixed bottom-[70px] left-0 right-0 h-[40vh] mobile-sheet flex flex-col">
-        <div class="p-4 border-b border-slate-100 flex justify-between items-center">
-            <h3 class="font-bold text-slate-700">Studio & Lighting</h3>
-            <button onclick="closeMobilePanels()" class="w-8 h-8 bg-slate-100 rounded-full text-slate-500"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="p-4 overflow-y-auto custom-scroll flex-1" id="mobile-studio-container"></div>
+    <!-- MOBILE NAVBAR -->
+    <div class="md:hidden fixed bottom-4 left-4 right-4 mobile-nav rounded-2xl h-16 flex items-center justify-around z-40 px-2 animate-fade-in-up" style="animation-delay: 0.2s;">
+        <button onclick="openSheet('products', this)" class="nav-btn flex flex-col items-center gap-1 text-slate-400 p-2 w-14 transition"><i class="fas fa-box-open text-lg"></i><span class="text-[9px] font-medium">Produk</span></button>
+        <button onclick="openSheet('edit', this)" class="nav-btn flex flex-col items-center gap-1 text-slate-400 p-2 w-14 transition"><i class="fas fa-pen-nib text-lg"></i><span class="text-[9px] font-medium">Edit</span></button>
+        <button onclick="openSheet('studio', this)" class="nav-btn flex flex-col items-center gap-1 text-slate-400 p-2 w-14 transition"><i class="fas fa-lightbulb text-lg"></i><span class="text-[9px] font-medium">Studio</span></button>
+        <div class="w-[1px] h-8 bg-slate-300 mx-1"></div>
+        <button onclick="openExportMenu('mobile')" class="flex items-center justify-center w-10 h-10 bg-slate-800 rounded-full text-white shadow-lg active:scale-90 transition"><i class="fas fa-download text-sm"></i></button>
     </div>
 
-    <!-- Mobile Navbar (Fixed Bottom) -->
-    <div class="md:hidden fixed bottom-4 left-4 right-4 bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-white/50 h-16 flex items-center justify-around z-50 px-2">
-        <button onclick="openMobilePanel('products', this)" class="nav-btn flex flex-col items-center gap-1 text-slate-400 p-2 w-16">
-            <i class="fas fa-cube text-lg transition-transform"></i>
-            <span class="text-[9px] font-medium">Produk</span>
-        </button>
-        <button onclick="openMobilePanel('edit', this)" class="nav-btn flex flex-col items-center gap-1 text-slate-400 p-2 w-16">
-            <i class="fas fa-paint-brush text-lg transition-transform"></i>
-            <span class="text-[9px] font-medium">Desain</span>
-        </button>
-        <button onclick="openMobilePanel('studio', this)" class="nav-btn flex flex-col items-center gap-1 text-slate-400 p-2 w-16">
-            <i class="fas fa-sliders-h text-lg transition-transform"></i>
-            <span class="text-[9px] font-medium">Studio</span>
-        </button>
-        <div class="w-[1px] h-8 bg-slate-200 mx-1"></div>
-        <button onclick="exportImage()" class="flex flex-col items-center justify-center w-10 h-10 bg-slate-800 rounded-full text-white shadow-lg active:scale-90 transition-transform">
-            <i class="fas fa-download text-sm"></i>
-        </button>
-    </div>
-
-    <!-- Canvas -->
+    <!-- CANVAS -->
     <div id="canvas-container"></div>
 
-    <!-- Template for Controls (Injected to both Desktop & Mobile containers) -->
-    <template id="controls-template">
-        
-        <!-- SECTION 1: PRODUCTS -->
-        <div class="control-section section-products">
-            <label class="block text-xs font-bold text-blue-400 uppercase tracking-widest mb-3">Produk</label>
+    <!-- === TEMPLATES === -->
+    
+    <!-- TPL: PRODUCTS -->
+    <template id="tpl-products">
+        <div class="space-y-4">
             <div class="grid grid-cols-3 gap-2">
-                <button onclick="switchProduct('book')" class="product-btn p-btn-book active flex flex-col items-center justify-center p-3 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600">
-                    <i class="fas fa-book text-lg mb-1"></i><span class="text-[9px] font-semibold">Buku</span>
-                </button>
-                <button onclick="switchProduct('box')" class="product-btn p-btn-box flex flex-col items-center justify-center p-3 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600">
-                    <i class="fas fa-box-open text-lg mb-1"></i><span class="text-[9px] font-semibold">Box</span>
-                </button>
-                <button onclick="switchProduct('can')" class="product-btn p-btn-can flex flex-col items-center justify-center p-3 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600">
-                    <i class="fas fa-wine-bottle text-lg mb-1"></i><span class="text-[9px] font-semibold">Kaleng</span>
-                </button>
-                <button onclick="switchProduct('poster')" class="product-btn p-btn-poster flex flex-col items-center justify-center p-3 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600">
-                    <i class="fas fa-image text-lg mb-1"></i><span class="text-[9px] font-semibold">Poster</span>
-                </button>
-                <button onclick="switchProduct('totebag')" class="product-btn p-btn-totebag flex flex-col items-center justify-center p-3 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600">
-                    <i class="fas fa-shopping-bag text-lg mb-1"></i><span class="text-[9px] font-semibold">Totebag</span>
-                </button>
-                <button onclick="switchProduct('pillow')" class="product-btn p-btn-pillow flex flex-col items-center justify-center p-3 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600">
-                    <i class="fas fa-couch text-lg mb-1"></i><span class="text-[9px] font-semibold">Bantal</span>
-                </button>
+                <button onclick="switchProduct('book')" class="product-btn js-btn-book active flex flex-col items-center justify-center p-3 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600"><i class="fas fa-book text-lg mb-1"></i><span class="text-[9px] font-bold">Buku</span></button>
+                <button onclick="switchProduct('box')" class="product-btn js-btn-box flex flex-col items-center justify-center p-3 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600"><i class="fas fa-cube text-lg mb-1"></i><span class="text-[9px] font-bold">Box</span></button>
+                <button onclick="switchProduct('phone')" class="product-btn js-btn-phone flex flex-col items-center justify-center p-3 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600"><i class="fas fa-mobile-alt text-lg mb-1"></i><span class="text-[9px] font-bold">Phone</span></button>
+                <button onclick="switchProduct('laptop')" class="product-btn js-btn-laptop flex flex-col items-center justify-center p-3 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600"><i class="fas fa-laptop text-lg mb-1"></i><span class="text-[9px] font-bold">Laptop</span></button>
+                <button onclick="switchProduct('can')" class="product-btn js-btn-can flex flex-col items-center justify-center p-3 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600"><i class="fas fa-wine-bottle text-lg mb-1"></i><span class="text-[9px] font-bold">Kaleng</span></button>
+                <button onclick="switchProduct('mug')" class="product-btn js-btn-mug flex flex-col items-center justify-center p-3 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600"><i class="fas fa-mug-hot text-lg mb-1"></i><span class="text-[9px] font-bold">Mug</span></button>
+                <button onclick="switchProduct('totebag')" class="product-btn js-btn-totebag flex flex-col items-center justify-center p-3 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600"><i class="fas fa-shopping-bag text-lg mb-1"></i><span class="text-[9px] font-bold">Totebag</span></button>
+                <button onclick="switchProduct('paperbag')" class="product-btn js-btn-paperbag flex flex-col items-center justify-center p-3 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600"><i class="fas fa-shopping-basket text-lg mb-1"></i><span class="text-[9px] font-bold">Paperbag</span></button>
+                <button onclick="switchProduct('billboard')" class="product-btn js-btn-billboard flex flex-col items-center justify-center p-3 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600"><i class="fas fa-ad text-lg mb-1"></i><span class="text-[9px] font-bold">Billboard</span></button>
+                <button onclick="switchProduct('poster')" class="product-btn js-btn-poster flex flex-col items-center justify-center p-3 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600"><i class="fas fa-image text-lg mb-1"></i><span class="text-[9px] font-bold">Poster</span></button>
+                <button onclick="switchProduct('card')" class="product-btn js-btn-card flex flex-col items-center justify-center p-3 border border-white/60 bg-white/40 rounded-xl hover:bg-blue-50 text-slate-600"><i class="fas fa-id-card text-lg mb-1"></i><span class="text-[9px] font-bold">Kartu</span></button>
             </div>
         </div>
+    </template>
 
-        <!-- SECTION 2: EDIT DESIGN -->
-        <div class="control-section section-edit mt-6 md:mt-0">
-            <label class="block text-xs font-bold text-blue-400 uppercase tracking-widest mb-3">Material</label>
-            
+    <!-- TPL: EDIT -->
+    <template id="tpl-edit">
+        <div class="space-y-5">
             <!-- Side Selector -->
-            <div id="side-selector-container" class="hidden mb-3">
-                <label class="block text-[9px] font-bold mb-1.5 text-slate-500">SISI AKTIF:</label>
-                <div id="side-buttons" class="flex gap-1 flex-wrap"></div>
+            <div class="js-side-container hidden p-3 bg-blue-50/80 rounded-xl border border-blue-100">
+                <label class="block text-[9px] font-bold mb-2 text-blue-500 uppercase tracking-wider">Bagian yg diedit:</label>
+                <div class="js-side-buttons flex gap-2 flex-wrap"></div>
             </div>
 
-            <!-- Upload & Tools -->
-            <div class="mb-4 space-y-2">
-                <div class="flex gap-2">
-                    <label class="flex-1 group flex flex-col items-center justify-center h-10 px-4 transition bg-white/50 border-2 border-blue-100 border-dashed rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/50">
-                        <div class="flex items-center space-x-2 text-blue-500 group-hover:text-blue-600">
-                            <i class="fas fa-cloud-upload-alt text-xs"></i>
-                            <span class="text-[10px] font-semibold">Upload Gambar</span>
-                        </div>
-                        <input type="file" id="upload-texture" class="hidden" accept="image/*" onchange="handleUpload(this)">
-                    </label>
-                    <button onclick="removeTexture()" class="w-10 h-10 flex items-center justify-center bg-white/50 border-2 border-red-100 rounded-xl text-red-400 hover:bg-red-50 hover:border-red-300 transition-all"><i class="fas fa-trash-alt text-xs"></i></button>
-                </div>
-                
-                <!-- Pattern Toggle -->
-                <div class="flex items-center justify-between bg-white/40 p-2 rounded-lg border border-white/60">
-                    <span class="text-[10px] font-bold text-slate-500 ml-1">Mode Pola (Ulang)</span>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="pattern-toggle" class="sr-only peer" onchange="togglePattern(this.checked)">
-                        <div class="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-500"></div>
-                    </label>
-                </div>
+            <!-- Upload -->
+            <div class="flex gap-2">
+                <label class="flex-1 h-12 bg-white border border-dashed border-blue-300 rounded-xl flex items-center justify-center cursor-pointer hover:bg-blue-50 transition relative overflow-hidden group">
+                    <div class="flex items-center gap-2 text-blue-500 group-hover:text-blue-600">
+                        <i class="fas fa-cloud-upload-alt text-sm"></i> <span class="text-xs font-bold">Upload Gambar</span>
+                    </div>
+                    <input type="file" class="hidden" accept="image/*" onchange="handleUpload(this)">
+                </label>
+                <button onclick="removeTexture()" class="w-12 h-12 flex items-center justify-center bg-white border border-red-200 rounded-xl text-red-400 hover:bg-red-50 hover:text-red-500 transition"><i class="fas fa-trash-alt"></i></button>
+            </div>
+
+            <!-- Pattern Toggle -->
+            <div class="flex items-center justify-between bg-white/60 p-3 rounded-xl border border-white/60">
+                <span class="text-xs font-bold text-slate-600"><i class="fas fa-th mr-2 text-slate-400"></i>Mode Pola (Ulang)</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" class="sr-only peer js-pattern-toggle" onchange="updateAllPatternToggles(this.checked)">
+                    <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500"></div>
+                </label>
             </div>
 
             <!-- Colors -->
-            <div class="mb-4">
-                <div class="flex justify-between items-center mb-1.5">
-                    <label class="block text-[10px] font-bold text-slate-500">WARNA DASAR</label>
-                    <button onclick="setProductColor(0xffffff)" class="text-[9px] text-blue-500 hover:underline">Reset</button>
-                </div>
-                <div class="flex gap-2.5">
-                    <button onclick="setProductColor(0xffffff)" class="w-7 h-7 rounded-full border border-slate-200 bg-white shadow-sm hover:scale-110 transition"></button>
-                    <button onclick="setProductColor(0x1e293b)" class="w-7 h-7 rounded-full border border-slate-600 bg-slate-800 shadow-sm hover:scale-110 transition"></button>
-                    <button onclick="setProductColor(0xef4444)" class="w-7 h-7 rounded-full border border-red-300 bg-red-500 shadow-sm hover:scale-110 transition"></button>
-                    <button onclick="setProductColor(0x3b82f6)" class="w-7 h-7 rounded-full border border-blue-300 bg-blue-500 shadow-sm hover:scale-110 transition"></button>
-                    <div class="relative w-7 h-7 rounded-full overflow-hidden border border-slate-200 shadow-sm hover:scale-110 transition">
-                        <input type="color" oninput="setProductColor(this.value)" class="absolute -top-2 -left-2 w-12 h-12 cursor-pointer">
+            <div>
+                <div class="flex justify-between mb-2"><label class="text-[10px] font-bold text-slate-400 uppercase">Warna Produk</label><button onclick="setProductColor(0xffffff)" class="text-[9px] text-blue-500 font-bold hover:underline">Reset</button></div>
+                <div class="flex gap-2">
+                    <button onclick="setProductColor(0xffffff)" class="w-8 h-8 rounded-full border border-slate-200 bg-white shadow-sm hover:scale-110 transition"></button>
+                    <button onclick="setProductColor(0x111827)" class="w-8 h-8 rounded-full border border-slate-600 bg-slate-900 shadow-sm hover:scale-110 transition"></button>
+                    <button onclick="setProductColor(0xef4444)" class="w-8 h-8 rounded-full border border-red-300 bg-red-500 shadow-sm hover:scale-110 transition"></button>
+                    <button onclick="setProductColor(0x3b82f6)" class="w-8 h-8 rounded-full border border-blue-300 bg-blue-500 shadow-sm hover:scale-110 transition"></button>
+                    <div class="relative w-8 h-8 rounded-full overflow-hidden border border-slate-200 shadow-sm hover:scale-110 transition">
+                        <input type="color" oninput="setProductColor(this.value)" class="absolute -top-4 -left-4 w-16 h-16 cursor-pointer">
                     </div>
                 </div>
             </div>
 
             <!-- Transform Controls -->
-            <div id="transform-controls" class="bg-white/40 p-3 rounded-xl border border-white/60 opacity-50 pointer-events-none transition-all">
-                <div class="flex justify-between items-center mb-2">
-                    <label class="block text-[10px] font-bold text-blue-500 uppercase">Posisi</label>
-                    <button onclick="resetTransform()" class="text-[9px] text-blue-400">Reset</button>
+            <div class="js-transform-box bg-white/60 p-4 rounded-xl border border-white/60 transition-opacity">
+                <div class="flex justify-between items-center mb-3">
+                    <label class="text-[10px] font-bold text-blue-500 uppercase">Posisi & Skala</label>
+                    <button onclick="resetTransform()" class="text-[9px] font-bold text-blue-400 hover:text-blue-600">RESET</button>
                 </div>
-                <div class="grid grid-cols-2 gap-x-3 gap-y-2">
+                <div class="grid grid-cols-2 gap-x-4 gap-y-3">
                     <div>
-                        <div class="flex justify-between text-[9px] text-slate-500"><span>Zoom</span><span id="val-scale">1.0x</span></div>
-                        <input type="range" min="0.1" max="3.0" step="0.1" value="1.0" oninput="updateTextureTransform('scale', this.value)">
+                        <div class="flex justify-between text-[9px] text-slate-500 mb-1"><span>Zoom</span><span class="js-val-scale font-bold">1.0x</span></div>
+                        <input type="range" class="js-inp-scale" min="0.1" max="3.0" step="0.1" value="1.0" oninput="syncTransform('scale', this.value)">
                     </div>
                     <div>
-                        <div class="flex justify-between text-[9px] text-slate-500"><span>Rotasi</span><span id="val-rot">0°</span></div>
-                        <input type="range" min="-3.14" max="3.14" step="0.1" value="0" oninput="updateTextureTransform('rot', this.value)">
+                        <div class="flex justify-between text-[9px] text-slate-500 mb-1"><span>Rotasi</span><span class="js-val-rot font-bold">0°</span></div>
+                        <input type="range" class="js-inp-rot" min="-3.14" max="3.14" step="0.1" value="0" oninput="syncTransform('rot', this.value)">
                     </div>
                     <div>
-                        <div class="flex justify-between text-[9px] text-slate-500"><span>Geser X</span></div>
-                        <input type="range" min="-1.0" max="1.0" step="0.05" value="0" oninput="updateTextureTransform('offx', this.value)">
+                        <div class="flex justify-between text-[9px] text-slate-500 mb-1"><span>Geser X</span></div>
+                        <input type="range" class="js-inp-offx" min="-1.0" max="1.0" step="0.05" value="0" oninput="syncTransform('offx', this.value)">
                     </div>
                     <div>
-                        <div class="flex justify-between text-[9px] text-slate-500"><span>Geser Y</span></div>
-                        <input type="range" min="-1.0" max="1.0" step="0.05" value="0" oninput="updateTextureTransform('offy', this.value)">
+                        <div class="flex justify-between text-[9px] text-slate-500 mb-1"><span>Geser Y</span></div>
+                        <input type="range" class="js-inp-offy" min="-1.0" max="1.0" step="0.05" value="0" oninput="syncTransform('offy', this.value)">
                     </div>
                 </div>
             </div>
         </div>
+    </template>
 
-        <!-- SECTION 3: STUDIO & LIGHTING -->
-        <div class="control-section section-studio mt-6 md:mt-0">
-            <label class="block text-xs font-bold text-blue-400 uppercase tracking-widest mb-3">Lingkungan</label>
-            
-            <div class="mb-4">
-                <label class="block text-[10px] font-bold mb-1.5 text-slate-500">BACKGROUND</label>
-                <div class="flex gap-2.5">
-                    <button onclick="setBgColor('#f0f9ff')" class="w-7 h-7 rounded-md border border-blue-200 bg-blue-50 hover:scale-105 transition"></button>
-                    <button onclick="setBgColor('#ffffff')" class="w-7 h-7 rounded-md border border-slate-200 bg-white hover:scale-105 transition"></button>
-                    <button onclick="setBgColor('#111827')" class="w-7 h-7 rounded-md border border-slate-600 bg-gray-900 hover:scale-105 transition"></button>
-                    <div class="relative w-7 h-7 rounded-md overflow-hidden border border-slate-200 hover:scale-105 transition">
-                        <input type="color" oninput="setBgColor(this.value)" class="absolute -top-2 -left-2 w-12 h-12 cursor-pointer">
-                    </div>
+    <!-- TPL: STUDIO -->
+    <template id="tpl-studio">
+        <div class="space-y-5">
+            <!-- Presets -->
+            <div>
+                <label class="text-[10px] font-bold text-slate-400 uppercase mb-2 block">Preset Pencahayaan</label>
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="setLighting('studio', this)" class="preset-btn active px-1 py-2 rounded-lg border border-slate-200 bg-white text-[9px] font-bold text-slate-500 hover:border-blue-400 transition">STUDIO</button>
+                    <button onclick="setLighting('warm', this)" class="preset-btn px-1 py-2 rounded-lg border border-slate-200 bg-white text-[9px] font-bold text-slate-500 hover:border-blue-400 transition">WARM</button>
+                    <button onclick="setLighting('cool', this)" class="preset-btn px-1 py-2 rounded-lg border border-slate-200 bg-white text-[9px] font-bold text-slate-500 hover:border-blue-400 transition">COOL</button>
+                    <button onclick="setLighting('neon', this)" class="preset-btn px-1 py-2 rounded-lg border border-slate-200 bg-white text-[9px] font-bold text-slate-500 hover:border-blue-400 transition">NEON</button>
                 </div>
             </div>
 
-            <div class="mb-4">
-                <label class="block text-[10px] font-bold mb-1.5 text-slate-500">PENCAHAYAAN</label>
-                <input type="range" min="0" max="2" step="0.1" value="1" oninput="updateLightIntensity(this.value)">
+            <!-- Background -->
+            <div>
+                <label class="text-[10px] font-bold text-slate-400 uppercase mb-2 block">Background</label>
+                <div class="flex gap-2 items-center">
+                    <button onclick="setBgColor('#f0f9ff')" class="w-9 h-9 rounded-lg border border-blue-200 bg-blue-50"></button>
+                    <button onclick="setBgColor('#ffffff')" class="w-9 h-9 rounded-lg border border-slate-200 bg-white"></button>
+                    <button onclick="setBgColor('#111827')" class="w-9 h-9 rounded-lg border border-slate-600 bg-slate-900"></button>
+                    <label class="flex-1 h-9 bg-white border border-dashed border-slate-300 rounded-lg flex items-center justify-center cursor-pointer text-[9px] font-bold text-slate-400 hover:border-blue-400 hover:text-blue-500">
+                        Upload Image
+                        <input type="file" class="hidden" accept="image/*" onchange="handleBgUpload(this)">
+                    </label>
+                </div>
             </div>
 
-            <div class="flex justify-between gap-2">
-                <button onclick="toggleShadow(!this.classList.contains('active')); this.classList.toggle('active')" class="flex-1 py-2 bg-white/50 border border-white/60 rounded-lg text-[10px] font-bold text-slate-500 active:bg-blue-50 active:text-blue-600 active shadow-sm">
-                    SHADOW ON/OFF
+            <!-- Toggles -->
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="toggleShadow(!this.classList.contains('active')); this.classList.toggle('active')" class="py-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-500 flex items-center justify-center gap-2 hover:bg-slate-50 transition active:bg-blue-50 active:text-blue-600 active:border-blue-200">
+                    <i class="fas fa-cloud-meatball"></i> Shadow
                 </button>
-                <button onclick="toggleAutoRotate(!this.classList.contains('active')); this.classList.toggle('active')" class="flex-1 py-2 bg-white/50 border border-white/60 rounded-lg text-[10px] font-bold text-slate-500 active:bg-purple-50 active:text-purple-600 shadow-sm">
-                    AUTO ROTATE
+                <button onclick="toggleRotate(!this.classList.contains('active')); this.classList.toggle('active')" class="py-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold text-slate-500 flex items-center justify-center gap-2 hover:bg-slate-50 transition active:bg-purple-50 active:text-purple-600 active:border-purple-200">
+                    <i class="fas fa-sync"></i> Auto Spin
                 </button>
             </div>
         </div>
     </template>
 
-    <!-- Scripts -->
+    <!-- TPL: EXPORT -->
+    <template id="tpl-export">
+        <div class="space-y-6">
+            <div>
+                <label class="text-[10px] font-bold text-slate-400 uppercase mb-3 block">Resolusi</label>
+                <div class="grid grid-cols-3 gap-3">
+                    <button onclick="setRes(1, this)" class="opt-btn active p-3 rounded-xl border border-slate-200 bg-white flex flex-col items-center gap-1 hover:border-blue-400">
+                        <span class="text-xs font-bold">Screen</span><span class="text-[8px] text-slate-400">Standard</span>
+                    </button>
+                    <button onclick="setRes(2, this)" class="opt-btn p-3 rounded-xl border border-slate-200 bg-white flex flex-col items-center gap-1 hover:border-blue-400">
+                        <span class="text-xs font-bold">2K (HD)</span><span class="text-[8px] text-slate-400">High Res</span>
+                    </button>
+                    <button onclick="setRes(4, this)" class="opt-btn p-3 rounded-xl border border-slate-200 bg-white flex flex-col items-center gap-1 hover:border-blue-400">
+                        <span class="text-xs font-bold">4K (Ultra)</span><span class="text-[8px] text-slate-400">Max Detail</span>
+                    </button>
+                </div>
+            </div>
+            <div>
+                <label class="text-[10px] font-bold text-slate-400 uppercase mb-3 block">Format File</label>
+                <div class="flex p-1 bg-white border border-slate-200 rounded-xl">
+                    <button onclick="setFmt('png', this)" class="opt-btn active flex-1 py-2 rounded-lg text-[10px] font-bold">PNG (Transparan)</button>
+                    <button onclick="setFmt('jpg', this)" class="opt-btn flex-1 py-2 rounded-lg text-[10px] font-bold text-slate-400">JPG (Solid)</button>
+                </div>
+                <p class="text-[9px] text-slate-400 mt-2 ml-1 italic">*Gunakan PNG agar background transparan (jika background dimatikan).</p>
+            </div>
+        </div>
+    </template>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
     <script>
-        // --- UI Logic: Injection & Mobile Navigation ---
-        
-        // 1. Inject Controls to Desktop and Mobile containers
-        const template = document.getElementById('controls-template').content;
-        
-        // Desktop: Inject All
-        const desktopContainer = document.getElementById('shared-controls-desktop');
-        desktopContainer.appendChild(template.cloneNode(true));
-
-        // Mobile: Inject Split Sections
-        // Note: cloneNode(true) creates a new instance, so we need to wire up events carefully 
-        // OR better: Move logic to handle clicks globally regardless of which button was clicked.
-        // We will clone again for mobile panels.
-        
-        const mobileProducts = document.getElementById('mobile-products-container');
-        const mobileEdit = document.getElementById('mobile-edit-container');
-        const mobileStudio = document.getElementById('mobile-studio-container');
-        
-        const t2 = document.getElementById('controls-template').content;
-        
-        // We need to carefully extract sections for mobile
-        // To simplify, let's clone the whole thing into each mobile panel and hide irrelevant parts via CSS in that specific panel context
-        // But that's inefficient. Let's do selective cloning manually or just clone all and hide via JS.
-        
-        const cloneForMobile = t2.cloneNode(true);
-        mobileProducts.appendChild(cloneForMobile.querySelector('.section-products').cloneNode(true));
-        mobileEdit.appendChild(t2.cloneNode(true).querySelector('.section-edit'));
-        mobileStudio.appendChild(t2.cloneNode(true).querySelector('.section-studio'));
-
-        // 2. Mobile Nav Logic
-        function openMobilePanel(panelName, btn) {
-            // Close all
-            closeMobilePanels();
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            
-            // Open target
-            document.getElementById(`mobile-panel-${panelName}`).classList.add('active');
-            btn.classList.add('active');
+        // === INITIALIZATION & TEMPLATE INJECTION ===
+        function inject(tplId, targetId) {
+            const tpl = document.getElementById(tplId).content;
+            const target = document.getElementById(targetId);
+            if(target) target.appendChild(tpl.cloneNode(true));
         }
 
-        function closeMobilePanels() {
-            document.querySelectorAll('.mobile-sheet').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        // Inject to Desktop
+        inject('tpl-products', 'desktop-controls-mount');
+        inject('tpl-edit', 'desktop-controls-mount');
+        inject('tpl-studio', 'desktop-controls-mount');
+        inject('tpl-export', 'desktop-export-mount');
+
+        // Inject to Mobile
+        inject('tpl-products', 'mobile-products-mount');
+        inject('tpl-edit', 'mobile-edit-mount');
+        inject('tpl-studio', 'mobile-studio-mount');
+        inject('tpl-export', 'mobile-export-mount');
+
+        // === UI STATE SYNCING ===
+        function syncUI(selector, action) {
+            document.querySelectorAll(selector).forEach(action);
         }
 
-        // --- Drag Logic for Desktop Sidebar ---
-        const sidebar = document.getElementById('sidebar');
-        const header = document.getElementById('sidebar-header');
-        let isDragging = false, startX, startY, initialLeft, initialTop;
-
-        header.addEventListener('mousedown', (e) => {
-            if(e.target.closest('button')) return;
-            isDragging = true;
-            header.style.cursor = 'grabbing';
-            startX = e.clientX; startY = e.clientY;
-            const s = window.getComputedStyle(sidebar);
-            initialLeft = parseInt(s.left); initialTop = parseInt(s.top);
-            document.addEventListener('mousemove', onDrag);
-            document.addEventListener('mouseup', stopDrag);
-        });
-
-        function onDrag(e) {
-            if(!isDragging) return;
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            sidebar.style.left = `${initialLeft + dx}px`;
-            sidebar.style.top = `${initialTop + dy}px`;
+        // === NAVIGATION ===
+        function openSheet(id, btn) {
+            closeSheets();
+            document.getElementById('sheet-'+id).classList.add('active');
+            if(btn) btn.classList.add('active');
+            document.getElementById('mobile-backdrop').classList.add('active');
+        }
+        function closeSheets() {
+            document.querySelectorAll('.mobile-sheet').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('mobile-backdrop').classList.remove('active');
+        }
+        function openExportMenu(mode) {
+            if(mode === 'desktop') {
+                document.getElementById('desktop-view-main').classList.add('hidden');
+                document.getElementById('desktop-view-export').classList.remove('hidden');
+                document.getElementById('desktop-view-export').classList.add('flex');
+            } else {
+                closeSheets();
+                document.getElementById('sheet-export').classList.add('active');
+                document.getElementById('mobile-backdrop').classList.add('active');
+            }
+        }
+        function closeExportMenu(mode) {
+            if(mode === 'desktop') {
+                document.getElementById('desktop-view-export').classList.add('hidden');
+                document.getElementById('desktop-view-export').classList.remove('flex');
+                document.getElementById('desktop-view-main').classList.remove('hidden');
+            } else {
+                document.getElementById('sheet-export').classList.remove('active');
+                document.getElementById('mobile-backdrop').classList.remove('active');
+            }
         }
 
-        function stopDrag() {
-            isDragging = false;
-            header.style.cursor = 'grab';
-            document.removeEventListener('mousemove', onDrag);
-            document.removeEventListener('mouseup', stopDrag);
-        }
-
-        // --- 3D Scene Setup ---
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xf0f9ff);
-
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        // === 3D ENGINE ===
+        const scene = new THREE.Scene(); scene.background = new THREE.Color(0xf0f9ff);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
         camera.position.set(5, 5, 8);
-
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        container.appendChild(renderer.domElement);
-
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+        
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
+        controls.enableDamping = true; controls.dampingFactor = 0.05;
 
         // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-        scene.add(ambientLight);
-        const spotLight = new THREE.SpotLight(0xffffff, 1.0);
-        spotLight.position.set(10, 15, 10);
-        spotLight.castShadow = true;
-        spotLight.shadow.mapSize.width = 2048;
-        spotLight.shadow.mapSize.height = 2048;
-        scene.add(spotLight);
-        const fillLight = new THREE.DirectionalLight(0xe0f2fe, 0.6);
-        fillLight.position.set(-8, 5, 2);
-        scene.add(fillLight);
-        
-        // Shadow Catcher
-        const shadowMat = new THREE.ShadowMaterial({ opacity: 0.2, color: 0x1e3a8a });
-        const ground = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), shadowMat);
-        ground.rotation.x = -Math.PI / 2;
-        ground.position.y = 0;
-        ground.receiveShadow = true;
-        scene.add(ground);
+        const lights = {
+            amb: new THREE.AmbientLight(0xffffff, 0.6),
+            spot: new THREE.SpotLight(0xffffff, 1.2),
+            fill: new THREE.DirectionalLight(0xe0f2fe, 0.5),
+            rim: new THREE.SpotLight(0x3b82f6, 0.0)
+        };
+        scene.add(lights.amb);
+        lights.spot.position.set(10, 15, 10); lights.spot.castShadow=true; lights.spot.shadow.mapSize.set(2048,2048); scene.add(lights.spot);
+        lights.fill.position.set(-8, 5, 2); scene.add(lights.fill);
+        lights.rim.position.set(-5, 8, -10); lights.rim.lookAt(0,0,0); scene.add(lights.rim);
 
-        // --- Product Generators ---
-        const textureLoader = new THREE.TextureLoader();
-        let currentObject = null;
-        let currentMaterials = {};
-        let activeMaterialKey = 'main';
-        let currentProduct = '';
-        let isPatternMode = false;
+        // Ground & Helper
+        const ground = new THREE.Mesh(new THREE.PlaneGeometry(50,50), new THREE.ShadowMaterial({opacity:0.2, color:0x1e3a8a}));
+        ground.rotation.x = -Math.PI/2; ground.position.y = 0; ground.receiveShadow = true; scene.add(ground);
+        const gridHelper = new THREE.GridHelper(20, 20, 0xcccccc, 0xe5e7eb);
+        gridHelper.position.y = 0.01; gridHelper.visible = false; scene.add(gridHelper);
 
-        // 1. BOOK
-        function createBook() {
-            const group = new THREE.Group();
-            const geo = new THREE.BoxGeometry(3.2, 5.0, 0.6);
-            const matPages = new THREE.MeshStandardMaterial({ color: 0xffffff });
-            const matSpine = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.4 });
-            const matCover = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
-            const matBack = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.4 });
-            const mesh = new THREE.Mesh(geo, [matPages, matSpine, matPages, matPages, matCover, matBack]);
-            mesh.position.y = 2.5; mesh.castShadow = true;
-            group.add(mesh);
-            return { mesh: group, materials: { 'front': matCover, 'back': matBack, 'spine': matSpine }, sides: [{key:'front', label:'Depan'}, {key:'back', label:'Belakang'}, {key:'spine', label:'Punggung'}] };
-        }
+        // === LOGIC ===
+        let currentObj, materials = {}, activeSide = 'main', isPattern = false, isSpin = false;
+        const loader = new THREE.TextureLoader();
 
-        // 2. BOX
-        function createBox() {
-            const group = new THREE.Group();
-            const geo = new THREE.BoxGeometry(3, 3, 3);
-            const matMain = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
-            const matTop = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
-            const matSide = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
-            // Right, Left, Top, Bottom, Front, Back
-            const mesh = new THREE.Mesh(geo, [matSide, matSide, matTop, matMain, matMain, matMain]);
-            mesh.position.y = 1.5; mesh.castShadow = true;
-            group.add(mesh);
-            return { mesh: group, materials: { 'front': matMain, 'top': matTop, 'side': matSide }, sides: [{key:'front', label:'Depan'}, {key:'top', label:'Atas'}, {key:'side', label:'Samping'}] };
-        }
-
-        // 3. CAN (SODA) - NEW
-        function createCan() {
-            const group = new THREE.Group();
-            const geo = new THREE.CylinderGeometry(1.2, 1.2, 4.5, 64);
-            const matBody = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2, metalness: 0.4 });
-            const matMetal = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.2, metalness: 0.8 });
-            
-            const mesh = new THREE.Mesh(geo, [matBody, matMetal, matMetal]); // Side, Top, Bottom
-            mesh.position.y = 2.25; mesh.castShadow = true;
-            group.add(mesh);
-            
-            // Rim detail
-            const rimGeo = new THREE.TorusGeometry(1.2, 0.05, 16, 64);
-            const rimTop = new THREE.Mesh(rimGeo, matMetal);
-            rimTop.rotation.x = Math.PI/2; rimTop.position.y = 4.5;
-            group.add(rimTop);
-
-            return { mesh: group, materials: { 'main': matBody } };
-        }
-
-        // 4. POSTER FRAME - NEW
-        function createPoster() {
-            const group = new THREE.Group();
-            // Frame
-            const frameGeo = new THREE.BoxGeometry(3.2, 4.5, 0.2);
-            const matFrame = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.8 }); // Black wood
-            const matArt = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 });
-            
-            // Materials: sides are frame, front is art
-            const materials = [matFrame, matFrame, matFrame, matFrame, matArt, matFrame];
-            const mesh = new THREE.Mesh(frameGeo, materials);
-            mesh.position.y = 2.25; mesh.castShadow = true;
-            
-            // Stand leg (back)
-            const legGeo = new THREE.BoxGeometry(0.5, 3, 0.1);
-            const leg = new THREE.Mesh(legGeo, matFrame);
-            leg.position.set(0, 2, -0.5); leg.rotation.x = -0.2;
-            
-            group.add(mesh); group.add(leg);
-            mesh.rotation.x = -0.1; // Slight tilt
-            
-            return { mesh: group, materials: { 'main': matArt } };
-        }
-
-        // 5. MUG & 6. TOTEBAG (Reused)
-        function createMug() {
-            const group = new THREE.Group();
-            const mesh = new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.5,3.5,64), new THREE.MeshStandardMaterial({color:0xffffff}));
-            mesh.position.y = 1.75; mesh.castShadow = true;
-            const handle = new THREE.Mesh(new THREE.TorusGeometry(0.8,0.15,16,50,3.5), new THREE.MeshStandardMaterial({color:0xffffff}));
-            handle.position.set(1.5,1.8,0); handle.rotation.z=Math.PI;
-            group.add(mesh); group.add(handle);
-            return { mesh: group, materials: {'main': mesh.material, 'handle': handle.material} };
-        }
-        function createTotebag() {
-            const group = new THREE.Group();
-            const mesh = new THREE.Mesh(new THREE.BoxGeometry(3.5,4,0.3), new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.9}));
-            mesh.position.y = 2; mesh.castShadow = true;
-            const h1 = new THREE.Mesh(new THREE.TorusGeometry(0.8,0.05,16,50,Math.PI), mesh.material);
-            h1.position.set(0,4,0.15);
-            group.add(mesh); group.add(h1);
-            return { mesh: group, materials: {'main': mesh.material} };
-        }
-        function createPillow() {
-            const group = new THREE.Group();
-            const mesh = new THREE.Mesh(new THREE.SphereGeometry(2.5,64,32), new THREE.MeshStandardMaterial({color:0xffffff, roughness:1}));
-            mesh.scale.set(1,0.6,1); mesh.position.y=1.5; mesh.castShadow=true;
-            group.add(mesh);
-            return { mesh: group, materials: {'main': mesh.material} };
-        }
-
-        // --- Controller Logic ---
-
+        // PRODUCTS
         function switchProduct(type) {
-            currentProduct = type;
-            if(currentObject) scene.remove(currentObject);
+            if(currentObj) scene.remove(currentObj);
             
-            // Highlight Button (Both Desktop & Mobile)
-            document.querySelectorAll('.product-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll(`.p-btn-${type}`).forEach(b => b.classList.add('active'));
+            // Sync UI
+            syncUI('.product-btn', el => el.classList.remove('active'));
+            syncUI(`.js-btn-${type}`, el => el.classList.add('active'));
 
             let res;
-            if(type==='book') res = createBook();
-            else if(type==='box') res = createBox();
-            else if(type==='can') res = createCan();
-            else if(type==='poster') res = createPoster();
-            else if(type==='mug') res = createMug();
-            else if(type==='totebag') res = createTotebag();
-            else if(type==='pillow') res = createPillow();
+            if(type==='book') {
+                const geo = new THREE.BoxGeometry(3.2, 5, 0.6);
+                const mats = { f:m(0xffffff,0.3), b:m(0x333333), s:m(0x333333) };
+                res = { mesh: new THREE.Mesh(geo, [m(0xffffff), mats.s, m(0xffffff), m(0xffffff), mats.f, mats.b]), mats, sides: [{k:'f',l:'Depan'},{k:'b',l:'Belakang'},{k:'s',l:'Punggung'}] };
+                res.mesh.position.y=2.5;
+            } 
+            else if(type==='box') {
+                const geo = new THREE.BoxGeometry(3,3,3);
+                const mats = { f:m(0xffffff), t:m(0xffffff), s:m(0xffffff) };
+                res = { mesh: new THREE.Mesh(geo, [mats.s, m(0xffffff), mats.t, m(0xffffff), mats.f, m(0xffffff)]), mats, sides: [{k:'f',l:'Depan'},{k:'t',l:'Atas'},{k:'s',l:'Samping'}] };
+                res.mesh.position.y=1.5;
+            }
+            else if(type==='billboard') {
+                const g = new THREE.Group();
+                const board = new THREE.Mesh(new THREE.BoxGeometry(6,3,0.2), [m(0x333333),m(0x333333),m(0x333333),m(0x333333),m(0xffffff),m(0x333333)]);
+                board.position.y=4.5; board.castShadow=true;
+                const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.2,3), m(0x555555));
+                pole.position.y=1.5;
+                g.add(board, pole);
+                res = { mesh:g, mats:{'main':board.material[4]}, sides:[{k:'main',l:'Papan'}] };
+            }
+            else if(type==='paperbag') {
+                const g = new THREE.Group();
+                const bag = new THREE.Mesh(new THREE.BoxGeometry(3,4,1.5), m(0xe8dcb5,0.8));
+                bag.position.y=2; bag.castShadow=true;
+                res = { mesh:g, mats:{'main':bag.material}, sides:[{k:'main',l:'Depan'}] };
+                g.add(bag);
+            }
+            else if(type==='phone') {
+                const geo = new THREE.BoxGeometry(2, 4, 0.2);
+                const sc = m(0x111111,0.1);
+                res = { mesh: new THREE.Mesh(geo, [m(0x222),m(0x222),m(0x222),m(0x222),sc,m(0x222)]), mats:{s:sc}, sides:[{k:'s',l:'Layar'}] };
+                res.mesh.position.y=2;
+            }
+            else if(type==='laptop') {
+                const g = new THREE.Group();
+                const base = new THREE.Mesh(new THREE.BoxGeometry(4,0.2,2.8), m(0x888888,0.3,0.8));
+                base.position.y=0.1; base.castShadow=true;
+                const sc = m(0x111111,0.2,0.5); sc.emissive = new THREE.Color(0x111111);
+                const lid = new THREE.Mesh(new THREE.BoxGeometry(4,2.8,0.1), [m(0x888),m(0x888),m(0x888),m(0x888),sc,m(0x888)]);
+                lid.position.set(0,1.4,-1.4); lid.rotation.x=0.2;
+                g.add(base, lid);
+                res = { mesh:g, mats:{s:sc}, sides:[{k:'s',l:'Layar'}] };
+            }
+            else if(type==='mug') {
+                const g = new THREE.Group();
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.5,3.5,64), m(0xffffff));
+                body.position.y=1.75; body.castShadow=true;
+                const h = new THREE.Mesh(new THREE.TorusGeometry(0.8,0.15,16,32), m(0xffffff));
+                h.position.set(1.5,1.8,0);
+                g.add(body, h);
+                res = { mesh:g, mats:{b:body.material, h:h.material}, sides:[{k:'b',l:'Body'},{k:'h',l:'Gagang'}] };
+            }
+            else if(type==='can') {
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.2,4.5,64), [m(0xffffff,0.2,0.4), m(0xcccccc,0.3,0.8), m(0xcccccc,0.3,0.8)]);
+                body.position.y=2.25; body.castShadow=true;
+                res = { mesh:body, mats:{b:body.material[0]}, sides:[{k:'b',l:'Body'}] };
+            }
+            else if(type==='totebag') {
+                const bag = new THREE.Mesh(new THREE.BoxGeometry(3.5,4,0.3), m(0xffffff,0.9));
+                bag.position.y=2; bag.castShadow=true;
+                res = { mesh:bag, mats:{m:bag.material}, sides:[{k:'m',l:'Tas'}] };
+            }
+            else if(type==='poster') {
+                const fr = new THREE.Mesh(new THREE.BoxGeometry(3.2,4.5,0.1), [m(0x111),m(0x111),m(0x111),m(0x111),m(0xffffff),m(0x111)]);
+                fr.position.y=2.25; fr.rotation.x=-0.1; fr.castShadow=true;
+                res = { mesh:fr, mats:{f:fr.material[4]}, sides:[{k:'f',l:'Poster'}] };
+            }
+            else if(type==='card') {
+                const c = new THREE.Mesh(new THREE.BoxGeometry(3,0.02,1.8), m(0xffffff));
+                c.position.y=2; c.rotation.set(0.5,0.5,0); c.castShadow=true;
+                res = { mesh:c, mats:{f:c.material}, sides:[{k:'f',l:'Kartu'}] };
+            }
+            else { // Pillow (Default fallback)
+                const p = new THREE.Mesh(new THREE.SphereGeometry(2.5,32,32), m(0xffffff,1));
+                p.scale.set(1,0.6,1); p.position.y=1.5; p.castShadow=true;
+                res = { mesh:p, mats:{m:p.material}, sides:[{k:'m',l:'Bantal'}] };
+            }
 
-            currentObject = res.mesh;
-            currentMaterials = res.materials;
-            scene.add(currentObject);
-
-            // Handle Sides
-            activeMaterialKey = 'main';
-            const sideContainers = document.querySelectorAll('#side-selector-container');
-            const sideBtnsContainers = document.querySelectorAll('#side-buttons');
+            if(res.mesh.castShadow === undefined) res.mesh.traverse(c=>{if(c.isMesh) c.castShadow=true;});
             
-            sideBtnsContainers.forEach(el => el.innerHTML = '');
+            currentObj = res.mesh;
+            materials = res.mats;
+            scene.add(currentObj);
             
+            // Setup Sides UI
+            const containers = document.querySelectorAll('.js-side-buttons');
+            const wraps = document.querySelectorAll('.js-side-container');
+            
+            containers.forEach(c => c.innerHTML = '');
             if(res.sides) {
-                sideContainers.forEach(el => el.classList.remove('hidden'));
-                activeMaterialKey = res.sides[0].key;
-                
-                res.sides.forEach((side, idx) => {
+                wraps.forEach(w => w.classList.remove('hidden'));
+                activeSide = res.sides[0].k;
+                res.sides.forEach((s, i) => {
                     const btn = document.createElement('button');
-                    btn.className = `side-btn px-2 py-1 text-[9px] font-bold rounded border border-slate-300 bg-white text-slate-500 hover:bg-slate-50 transition mr-1 ${idx===0?'active':''}`;
-                    btn.innerText = side.label;
-                    btn.dataset.key = side.key;
+                    btn.className = `side-btn px-2 py-1 text-[9px] font-bold rounded border border-blue-200 bg-white text-slate-500 hover:bg-blue-50 transition ${i===0?'active':''}`;
+                    btn.innerText = s.l;
                     btn.onclick = () => {
-                        activeMaterialKey = side.key;
-                        document.querySelectorAll('.side-btn').forEach(b => b.classList.remove('active'));
-                        document.querySelectorAll(`.side-btn[data-key="${side.key}"]`).forEach(b => b.classList.add('active'));
-                        checkTransformVis();
+                        activeSide = s.k;
+                        syncUI('.side-btn', el => el.classList.remove('active'));
+                        syncUI('.side-btn', el => { if(el.innerText === s.l) el.classList.add('active'); });
+                        checkTransform();
                     };
-                    sideBtnsContainers.forEach(c => c.appendChild(btn.cloneNode(true)));
+                    containers.forEach(c => c.appendChild(btn.cloneNode(true)));
                 });
-                
-                // Re-bind events to cloned buttons
-                sideBtnsContainers.forEach(c => {
-                    Array.from(c.children).forEach(btn => {
-                        btn.onclick = () => {
-                            activeMaterialKey = btn.dataset.key;
-                            document.querySelectorAll('.side-btn').forEach(b => b.classList.remove('active'));
-                            document.querySelectorAll(`.side-btn[data-key="${btn.dataset.key}"]`).forEach(b => b.classList.add('active'));
-                            checkTransformVis();
+                // Re-bind click to clones
+                containers.forEach(c => {
+                    Array.from(c.children).forEach(b => {
+                        b.onclick = () => {
+                            const side = res.sides.find(x => x.l === b.innerText);
+                            if(side) {
+                                activeSide = side.k;
+                                syncUI('.side-btn', el => el.classList.remove('active'));
+                                syncUI('.side-btn', el => { if(el.innerText === side.l) el.classList.add('active'); });
+                                checkTransform();
+                            }
                         }
                     })
-                })
-
+                });
             } else {
-                sideContainers.forEach(el => el.classList.add('hidden'));
+                wraps.forEach(w => w.classList.add('hidden'));
+                if(Object.keys(materials).length>0) activeSide = Object.keys(materials)[0];
             }
             
-            // Reset UI inputs
-            document.querySelectorAll('input[type="file"]').forEach(i => i.value = '');
-            checkTransformVis();
+            resetTransform();
+            checkTransform();
         }
 
-        function checkTransformVis() {
-            const mat = currentMaterials[activeMaterialKey];
-            const opacity = (mat && mat.map) ? '1' : '0.5';
-            const pointer = (mat && mat.map) ? 'auto' : 'none';
-            document.querySelectorAll('#transform-controls').forEach(el => {
-                el.style.opacity = opacity;
-                el.style.pointerEvents = pointer;
-            });
+        // Helper: Create Standard Material
+        function m(col, rough=0.5, metal=0) { return new THREE.MeshStandardMaterial({ color: col, roughness: rough, metalness: metal }); }
+
+        // TRANSFORM & TEXTURE Logic
+        function checkTransform() {
+            const mat = materials[activeSide];
+            const op = (mat && mat.map) ? '1' : '0.5';
+            const ev = (mat && mat.map) ? 'auto' : 'none';
+            syncUI('.js-transform-box', el => { el.style.opacity = op; el.style.pointerEvents = ev; });
         }
 
-        // --- Texture & Color ---
         function handleUpload(input) {
-            const file = input.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                textureLoader.load(e.target.result, (tex) => {
+            if(!input.files[0]) return;
+            const r = new FileReader();
+            r.onload = e => {
+                loader.load(e.target.result, tex => {
                     tex.colorSpace = THREE.SRGBColorSpace;
-                    tex.minFilter = THREE.LinearFilter;
-                    
-                    const mat = currentMaterials[activeMaterialKey];
+                    const mat = materials[activeSide];
                     if(mat) {
-                        mat.map = tex;
-                        mat.color.setHex(0xffffff);
-                        mat.needsUpdate = true;
-                        // Apply tiling if enabled
-                        applyPatternMode(tex);
-                        checkTransformVis();
+                        mat.map = tex; mat.color.setHex(0xffffff); mat.needsUpdate = true;
+                        updatePattern(tex);
+                        checkTransform();
                     }
                 });
             };
-            reader.readAsDataURL(file);
+            r.readAsDataURL(input.files[0]);
+            input.value = '';
         }
 
-        function togglePattern(checked) {
-            isPatternMode = checked;
-            // Apply to all current textures
-            Object.values(currentMaterials).forEach(mat => {
-                if(mat.map) {
-                    applyPatternMode(mat.map);
-                    mat.needsUpdate = true;
-                }
-            });
+        function removeTexture() {
+            const mat = materials[activeSide];
+            if(mat) { mat.map = null; mat.needsUpdate = true; checkTransform(); }
         }
 
-        function applyPatternMode(tex) {
-            if(isPatternMode) {
-                tex.wrapS = THREE.RepeatWrapping;
-                tex.wrapT = THREE.RepeatWrapping;
-                tex.repeat.set(2, 2); // Default tile
-            } else {
-                tex.wrapS = THREE.ClampToEdgeWrapping;
-                tex.wrapT = THREE.ClampToEdgeWrapping;
-                tex.repeat.set(1, 1);
-            }
+        function updateAllPatternToggles(checked) {
+            isPattern = checked;
+            syncUI('.js-pattern-toggle', el => el.checked = checked);
+            Object.values(materials).forEach(mat => { if(mat.map) { updatePattern(mat.map); mat.needsUpdate = true; } });
+        }
+
+        function updatePattern(tex) {
+            if(isPattern) { tex.wrapS=tex.wrapT=THREE.RepeatWrapping; tex.repeat.set(2,2); } 
+            else { tex.wrapS=tex.wrapT=THREE.ClampToEdgeWrapping; tex.repeat.set(1,1); }
             tex.needsUpdate = true;
         }
 
-        window.setProductColor = (hex) => {
-            const col = new THREE.Color(hex);
-            const mat = currentMaterials[activeMaterialKey];
+        window.setProductColor = (val) => {
+            const col = new THREE.Color(val);
+            const mat = materials[activeSide];
             if(mat) mat.color = col;
-            if(currentProduct === 'mug' && activeMaterialKey==='main' && currentMaterials.handle) currentMaterials.handle.color = col;
-        };
+        }
 
-        window.setBgColor = (hex) => {
-            document.body.style.background = hex;
-            scene.background = new THREE.Color(hex);
-        };
-
-        window.updateTextureTransform = (type, val) => {
-            const mat = currentMaterials[activeMaterialKey];
-            if(!mat || !mat.map) return;
-            const tex = mat.map;
+        // Sync Transform Sliders
+        window.syncTransform = (type, val) => {
             val = parseFloat(val);
-            
-            if(type==='scale') {
-                const s = 1/val;
-                tex.repeat.set(s, s);
-                // If tiling, we might want different logic, but simple scaling works
+            const mat = materials[activeSide];
+            if(mat && mat.map) {
+                const t = mat.map;
+                if(type === 'scale') { const s=1/val; t.repeat.set(s,s); }
+                if(type === 'rot') t.rotation = -val;
+                if(type === 'offx') t.offset.x = val;
+                if(type === 'offy') t.offset.y = val;
             }
-            if(type==='rot') tex.rotation = -val;
-            if(type==='offx') tex.offset.x = val;
-            if(type==='offy') tex.offset.y = val;
-            
-            // Sync all sliders in UI
-            document.querySelectorAll('#val-'+type).forEach(el => el.innerText = type==='rot' ? Math.round(val*57.29)+'°' : (type==='scale' ? val+'x' : val));
-        };
+            syncUI(`.js-inp-${type}`, el => el.value = val);
+            syncUI(`.js-val-${type}`, el => el.innerText = (type==='rot' ? Math.round(val*57.29)+'°' : val+'x'));
+        }
 
-        window.removeTexture = () => {
-            const mat = currentMaterials[activeMaterialKey];
-            if(mat) {
-                mat.map = null;
-                mat.needsUpdate = true;
-                checkTransformVis();
+        window.resetTransform = () => {
+            const mat = materials[activeSide];
+            if(mat && mat.map) {
+                mat.map.offset.set(0,0); mat.map.rotation=0; mat.map.center.set(0.5,0.5); mat.map.repeat.set(1,1);
             }
-        };
+            syncTransform('scale', 1); syncTransform('rot', 0); syncTransform('offx', 0); syncTransform('offy', 0);
+        }
 
-        window.updateLightIntensity = (val) => {
-            spotLight.intensity = parseFloat(val);
-            ambientLight.intensity = parseFloat(val) * 0.5;
-        };
+        // --- STUDIO ---
+        window.setBgColor = (hex) => { scene.background = new THREE.Color(hex); }
+        window.handleBgUpload = (i) => {
+            if(i.files[0]) {
+                const r = new FileReader();
+                r.onload=e=>loader.load(e.target.result, t=>{ t.colorSpace='srgb'; scene.background=t; });
+                r.readAsDataURL(i.files[0]);
+            }
+        }
+        window.toggleGrid = () => gridHelper.visible = !gridHelper.visible;
+        window.resetCamera = () => { camera.position.set(5,5,8); controls.target.set(0,0,0); controls.update(); }
+        window.toggleShadow = (act) => ground.visible = act;
+        window.toggleRotate = (act) => isSpin = act;
+        window.setLighting = (mode, btn) => {
+            syncUI('.preset-btn', b => b.classList.remove('active'));
+            if(btn) syncUI('.preset-btn', b => { if(b.innerText===btn.innerText) b.classList.add('active'); });
+            
+            if(mode==='studio'){ lights.amb.color.setHex(0xffffff); lights.amb.intensity=0.6; lights.fill.color.setHex(0xe0f2fe); lights.rim.intensity=0; }
+            if(mode==='warm'){ lights.amb.color.setHex(0xffecd1); lights.amb.intensity=0.7; lights.fill.color.setHex(0xffae00); lights.rim.intensity=0; }
+            if(mode==='cool'){ lights.amb.color.setHex(0xd1f2ff); lights.amb.intensity=0.7; lights.fill.color.setHex(0x00bcd4); lights.rim.intensity=0; }
+            if(mode==='neon'){ lights.amb.color.setHex(0x110033); lights.amb.intensity=0.4; lights.fill.color.setHex(0xff00ff); lights.rim.color.setHex(0x00ffff); lights.rim.intensity=2; }
+        }
 
-        window.toggleShadow = (active) => {
-            ground.visible = active;
-        };
-
-        let isRotating = false;
-        window.toggleAutoRotate = (active) => { isRotating = active; };
-
-        window.exportImage = () => {
+        // --- EXPORT ---
+        let exRes = 1, exFmt = 'image/png';
+        window.setRes = (v, b) => { exRes = v; syncBtnGroup(b); }
+        window.setFmt = (v, b) => { exFmt = v==='png'?'image/png':'image/jpeg'; syncBtnGroup(b); }
+        function syncBtnGroup(btn) {
+            const p = btn.parentElement;
+            Array.from(p.children).forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+        }
+        window.processExport = () => {
+            const w = 1920 * (exRes===1?1 : exRes===2?1.5 : 2); // 1x=FHD, 2x=2Kish, 4x=4Kish
+            const h = 1080 * (exRes===1?1 : exRes===2?1.5 : 2);
+            renderer.setSize(w, h); camera.aspect = w/h; camera.updateProjectionMatrix();
             renderer.render(scene, camera);
-            const link = document.createElement('a');
-            link.download = 'mockup-studio-export.png';
-            link.href = renderer.domElement.toDataURL('image/png');
-            link.click();
-        };
+            const a = document.createElement('a'); a.download = `Diginex_Mockup_${Date.now()}.${exFmt.split('/')[1]}`; a.href = renderer.domElement.toDataURL(exFmt, 0.9); a.click();
+            renderer.setSize(window.innerWidth, window.innerHeight); camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
+        }
 
-        // --- Init ---
+        // Loop
         switchProduct('book');
-        
         function animate() {
             requestAnimationFrame(animate);
-            if(isRotating && currentObject) currentObject.rotation.y += 0.005;
+            if(isSpin && currentObj) currentObj.rotation.y += 0.005;
             controls.update();
             renderer.render(scene, camera);
         }
         animate();
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        window.onresize = () => { camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth,window.innerHeight); }
 
     </script>
 </body>
